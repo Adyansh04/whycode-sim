@@ -1,5 +1,5 @@
 <?xml version='1.0'?>
-<sdf version='1.6'>
+<sdf version='1.9'>
   <model name='docking_whycode'>
     <link name='base_link'>
       <pose>0 0 0.1 0 3.14 0</pose>
@@ -8,7 +8,7 @@
            Each plate is a box 0.1 x 1.2 x 0.05 m. Poses place them at x = -0.4 and x = +0.4
            relative to this link origin. Materials use Gazebo gray scripts. -->
       <visual name='base_plate_visual'>
-        <pose>-0.4 0 -0.11 0 1.57</pose>
+        <pose>-0.4 0 -0.11 0 1.57 0</pose>
         <geometry>
           <box>
             <size>0.1 1.2 0.05</size>
@@ -16,12 +16,13 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/Gray</name>
           </script>
         </material>
       </visual>
       <collision name='base_plate_collision'>
-        <pose>-0.4 0 -0.11 0 1.57</pose>
+        <pose>-0.4 0 -0.11 0 1.57 0</pose>
         <geometry>
           <box>
             <size>0.1 1.2 0.05</size>
@@ -30,7 +31,7 @@
       </collision>
 
       <visual name='base_plate_visual2'>
-        <pose>0.4 0 -0.11 0 1.57</pose>
+        <pose>0.4 0 -0.11 0 1.57 0</pose>
         <geometry>
           <box>
             <size>0.1 1.2 0.05</size>
@@ -38,12 +39,13 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/Gray</name>
           </script>
         </material>
       </visual>
       <collision name='base_plate_collision2'>
-        <pose>0.4 0 -0.11 0 1.57</pose>
+        <pose>0.4 0 -0.11 0 1.57 0</pose>
         <geometry>
           <box>
             <size>0.1 1.2 0.05</size>
@@ -65,6 +67,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/DarkGrey</name>
           </script>
         </material>
@@ -87,6 +90,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/DarkGrey</name>
           </script>
         </material>
@@ -109,6 +113,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/DarkGrey</name>
           </script>
         </material>
@@ -132,6 +137,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/DarkGrey</name>
           </script>
         </material>
@@ -154,6 +160,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/DarkGrey</name>
           </script>
         </material>
@@ -176,6 +183,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/DarkGrey</name>
           </script>
         </material>
@@ -201,6 +209,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/Gray</name>
           </script>
         </material>
@@ -222,6 +231,7 @@
         </geometry>
         <material>
           <script>
+            <uri>file://media/materials/scripts/gazebo.material</uri>
             <name>Gazebo/Gray</name>
           </script>
         </material>
@@ -249,12 +259,15 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>model://WhyCode_1/materials/scripts</uri>
-            <uri>model://WhyCode_1/materials/textures</uri>
-            <name>WhyCode_1</name>
-          </script>
-        </material>
+  <pbr>
+    <metal>
+      <albedo_map>model://WhyCode_1/materials/textures/whycode_1.png</albedo_map>
+      <emissive_map>model://WhyCode_1/materials/textures/whycode_1.png</emissive_map>
+      <roughness>1.0</roughness>
+      <metalness>0.0</metalness>
+    </metal>
+  </pbr>
+</material>
       </visual>
 
    <!-- Marker plate 2: mirror image of marker_plate on the opposite X side.
@@ -269,12 +282,15 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>model://WhyCode_2/materials/scripts</uri>
-            <uri>model://WhyCode_2/materials/textures</uri>
-            <name>WhyCode_2</name>
-          </script>
-        </material>
+  <pbr>
+    <metal>
+      <albedo_map>model://WhyCode_2/materials/textures/whycode_2.png</albedo_map>
+      <emissive_map>model://WhyCode_2/materials/textures/whycode_2.png</emissive_map>
+      <roughness>1.0</roughness>
+      <metalness>0.0</metalness>
+    </metal>
+  </pbr>
+</material>
       </visual>
 
    <!-- Marker plate 3: a third vertical plate centered roughly at the link origin
@@ -290,12 +306,15 @@
           </box>
         </geometry>
         <material>
-          <script>
-            <uri>model://WhyCode_3/materials/scripts</uri>
-            <uri>model://WhyCode_3/materials/textures</uri>
-            <name>WhyCode_3</name>
-          </script>
-        </material>
+  <pbr>
+    <metal>
+      <albedo_map>model://WhyCode_3/materials/textures/whycode_3.png</albedo_map>
+      <emissive_map>model://WhyCode_3/materials/textures/whycode_3.png</emissive_map>
+      <roughness>1.0</roughness>
+      <metalness>0.0</metalness>
+    </metal>
+  </pbr>
+</material>
       </visual>
 
 
