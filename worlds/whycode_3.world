@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="two_whycode_world">
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://WhyCode_1</uri>
+      <pose>3.0 0.25 0.3 0 1.57 0.0</pose>
+    </include>
+    <include>
+      <uri>model://WhyCode_2</uri>
+      <pose>3.0 -0.25 0.3 0 1.57 0.0</pose>
+    </include>
+    <!-- Spacer box between top and bottom markers -->
+    <!-- <include> -->
+      <!-- <uri>model://spacer_box</uri> -->
+      <!-- <pose>3.0 0.25 0.25 0 0 0</pose> -->
+    <!-- </include> -->
+    <!-- Spawn two more codes exactly above these two markers -->
+    <include>
+      <uri>model://WhyCode_3</uri>
+      <pose>3.0 0.25 0.6 0 1.57 0.0</pose>
+    </include>
+    <include>
+      <uri>model://WhyCode_4</uri>
+      <pose>3.0 -0.25 0.6 0 1.57 0.0</pose>
+    </include>
+
+  </world>
+</sdf>

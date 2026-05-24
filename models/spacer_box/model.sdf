@@ -1,0 +1,27 @@
+<?xml version='1.0'?>
+<sdf version='1.6'>
+  <model name='spacer_box'>
+    <static>1</static>
+    <link name='spacer_link'>
+      <visual name='spacer_visual'>
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.1</size>
+          </box>
+        </geometry>
+        <material>
+          <script>
+            <name>Gazebo/White</name>
+          </script>
+        </material>
+      </visual>
+      <collision name='spacer_collision'>
+        <geometry>
+          <box>
+            <size>0.2 0.2 0.01</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

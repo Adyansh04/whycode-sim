@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="two_whycode_world">
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://docking_whycode</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <include>
+      <uri>model://docking_april</uri>
+      <pose>0 3 0 0 0 0</pose>
+    </include>
+  </world>
+</sdf>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fiducial_gazebo_sim</name>
+  <version>1.0.0</version>
+  <description>A Gazebo simulation package for fiducial markers.</description>
+  <maintainer email="adyansh.gupta@addverb.com">Adyansh Gupta</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>gazebo_ros</depend>
+  <depend>xacro</depend>
+
+  <export>
+    <gazebo_ros gazebo_model_path="${prefix}/models"/>
+  </export>
+</package>
