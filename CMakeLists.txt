@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(fiducial_gazebo_sim)
+project(whycode_sim)
 
 find_package(ament_cmake REQUIRED)
 

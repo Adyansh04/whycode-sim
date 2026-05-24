@@ -13,12 +13,12 @@ This package provides a very minimal Gazebo Harmonic (ros_gz_sim) simulation env
 1. **Build the workspace:**
    ```bash
    cd ~/whycode-bench/workspace
-   colcon build --packages-select fiducial_gazebo_sim
+   colcon build --packages-select whycode_sim
    source install/setup.bash
    ```
 2. **Launch the simulation (ROS 2 + Gazebo Harmonic):**
    ```bash
-   ros2 launch fiducial_gazebo_sim main.launch.py world:=docking.world
+   ros2 launch whycode_sim main.launch.py world:=docking.world
    ```
    Replace `world:=docking.world` with another filename from the `worlds/` directory, e.g. `whycode_1.world` or `whycode_2.world` to load different marker arrangements.
 
@@ -31,7 +31,7 @@ This package provides a very minimal Gazebo Harmonic (ros_gz_sim) simulation env
 
 
 ## Adding More Markers
-- To add more markers, create new directories in `fiducial_gazebo_sim/models/` (e.g., `WhyCode_10`) and copy the structure from an existing marker.
+- To add more markers, create new directories in `whycode_sim/models/` (e.g., `WhyCode_10`) and copy the structure from an existing marker.
 - Update the internal names and references in `model.config`, `model.sdf`, and material files.
 - Add the marker to your world file by including it with a unique pose.
 
