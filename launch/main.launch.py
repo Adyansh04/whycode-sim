@@ -12,7 +12,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    pkg_share = FindPackageShare("fiducial_gazebo_sim")
+    pkg_share = FindPackageShare("whycode_sim")
 
     world_arg = DeclareLaunchArgument(
         "world",
@@ -47,9 +47,9 @@ def generate_launch_description():
 
     gz_args_value = PythonExpression(
         [
-            "'-r' if ",
+            "'-r' if '",
             LaunchConfiguration("gui"),
-            " == 'true' else '-r -s --headless-rendering'",
+            "' == 'true' else '-r -s --headless-rendering'",
         ]
     )
 
