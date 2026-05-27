@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <world name="two_whycode_world">
+  <world name="docking_world">
       
     <scene>
       <shadows>false</shadows>
