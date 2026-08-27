@@ -1,0 +1,166 @@
+# Single source of truth for the Isaac scene, the ground-truth node and the waypoint
+# follower. All three read this file, so marker placement is computed once.
+
+# Headless still renders the camera; it drops only the interactive viewport, which costs
+# 1.5-2.5 GB of VRAM. ISAAC_HEADLESS in .env overrides this.
+headless: true
+
+world:
+  environment: "/Isaac/Environments/Simple_Warehouse/full_warehouse.usd"
+  # The robot spawns at the world origin and the warehouse shifts instead, so odom and
+  # world coincide and no frame offset propagates into the follower, the ground truth or
+  # the bag.
+  #
+  # Chosen with `run_sim.py --survey`, which projects the warehouse geometry onto the
+  # floor and finds the largest rectangular circuit whose edges are drivable and whose
+  # interior contains racks. The offset then puts the spawn at the narrowest point of that
+  # loop, so the run starts between shelves rather than driving out to reach them.
+  offset: [8.00, -16.10, 0.0]
+  yaw_deg: 0.0
+
+render:
+  # DLAA or Off only. DLSS is temporal and ghosts small high-contrast markers as
+  # they move, which corrupts detection statistics while the images still look fine.
+  antialiasing: DLAA
+  shadows: false        # matches <shadows>false</shadows> in the Gazebo worlds
+  motion_blur: false
+
+camera:
+  width: 1280
+  height: 720
+  hfov_deg: 80.0        # gives fx = fy = 762.7222; must match camera_intrinsics_sim.yaml
+  fps: 30
+  near_clip: 0.02
+  far_clip: 300.0
+  frame_id: "camera_link"   # must equal whycon_config_sim.yaml ros_interface.parent_frame_id
+  mount:                    # camera pose in the chassis frame (X fwd, Y left, Z up)
+    position: [0.28, 0.0, 0.62]
+    rpy_deg: [0.0, 0.0, 0.0]
+
+robot:
+  # Resolved against a candidate list at startup; run with --introspect to confirm
+  # the path, joint names, and wheel geometry for the installed asset version.
+  usd_path: "/Isaac/Robots/NVIDIA/NovaCarter/nova_carter.usd"
+  chassis_prim: "chassis_link"
+  # Measured off the asset with --introspect, not transcribed. The radius is the
+  # wheel centre height above the floor; the track width is the lateral separation.
+  wheel_radius_m: 0.1400
+  wheel_distance_m: 0.6201
+
+marker:
+  family: whycode       # whycode | apriltag -- swaps every marker at once
+
+  # Marker geometry is family-independent: a slot says where a marker stands and which
+  # way it faces, this table says what is printed on it and what a detector decodes.
+  # Switching `family` re-textures the scene and leaves path, poses and viewing angles
+  # identical, which is what makes the two runs comparable.
+  families:
+    whycode:
+      textures: [whycode_1, whycode_2, whycode_3, whycode_4,
+                 whycode_5, whycode_6, whycode_7, whycode_8, whycode_9]
+      # Measured, not assumed: a WhyCode id is a necklace code, not the file index, so
+      # whycode_3.png does NOT decode to 3. Produced by scripts/decode_marker_ids/, which
+      # links whycode_vision's own CNecklace and feeds it the ring sampled out of each
+      # texture. Re-run it if the textures are regenerated or id_bits changes.
+      ids: [8, 6, 7, 3, 4, 5, 1, 2, 0]
+    apriltag:
+      textures: [tag36_11_00000, tag36_11_00001, tag36_11_00002,
+                 tag36_11_00003, tag36_11_00004, tag36_11_00005,
+                 tag36_11_00006, tag36_11_00007, tag36_11_00008]
+      # AprilTag ids are the number in the filename, so these need no measurement.
+      ids: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+  size_m: 0.2           # coupled to whycon_config_sim.yaml detector.outer_diameter (0.20).
+                        # Changing this requires the matching change in whycode_vision.
+  # Level with camera.mount.position z, so incidence is purely horizontal. Raising
+  # markers above the camera adds an elevation component that reads as extra incidence
+  # and foreshortens the ring vertically.
+  height_m: 0.62        # marker centre height above the floor
+  # Incidence a robot sees approaching from far up the path. Chosen by sweeping the loop
+  # at 15..90 deg: 30 holds median incidence near 21 deg and still exercises the detector
+  # out to ~45. See the README for the table.
+  facing_angle_deg: 30
+  # Emissive makes markers lighting-independent, as albedo_map plus emissive_map did in
+  # Gazebo. A calibration knob, not a constant: RTX emission is in physical units, so 1.0
+  # is far too dim against warehouse lighting. Raise it until the marker reads flat.
+  emissive_intensity: 300.0
+  post:
+    radius: 0.02
+    height_offset: 0.0  # post runs from the floor to the marker's lower edge
+    colour: [0.3, 0.3, 0.3]
+
+visibility:
+  max_incidence_deg: 70.0   # past this the ellipse is too thin to fit reliably
+  min_diameter_px: 15.0     # detector min_size is 10 px; 15 leaves margin
+  frustum_margin_px: 0.0    # corners must clear the image edge by this much
+
+path:
+  loop: true
+  speed_mps: 0.8
+  lookahead_m: 1.2
+  max_yaw_rate_rps: 1.0
+  corner_slowdown: 0.8      # higher slows more through tight curvature
+  goal_tolerance_m: 0.3
+  # A 5 x 25 m circuit between shelves: up one rack aisle, across, down the parallel
+  # aisle, back. 60 m per lap. `--survey` requires the perimeter to be flanked by racks
+  # within 1.5 m on both sides; without that the largest drivable circuit is the
+  # warehouse's open apron, which is useless here.
+  #
+  # Waypoint 0 is the spawn, mid-aisle, with 1.7 m of free space either side.
+  waypoints:                # world frame (== odom), metres
+    - [0.0, 0.0]
+    - [0.0, 10.0]
+    - [-5.0, 10.0]
+    - [-5.0, -15.0]
+    - [0.0, -15.0]
+
+markers:
+  # Placement is derived from the path unless an entry gives an explicit `position`.
+  #   at_waypoint  index of the segment start      along_m   distance along that segment
+  #   side         left | right of travel          offset_m  lateral distance from centreline
+  #   facing_deg   incidence seen on approach      height_m  overrides marker.height_m
+  #
+  # Slots are filled from marker.families in order, so this list is geometry only.
+  #
+  # Produced by `run_sim.py --suggest-markers 9 --marker-offset 0.8`, which measures the
+  # free width to either side every half metre along the loop and spreads the picks
+  # evenly, alternating sides. Nine is the most both families supply.
+  #
+  # A marker reads head-on at offset/sin(facing_angle_deg), so 0.8 m at 30 deg gives 1.60 m
+  # range and 95 px. The offset is 0.8 rather than the usual 1.0-2.0 because these rack
+  # aisles pinch to 1.0 m of free space on the tighter side.
+  #
+  # facing_angle_deg is applied against the local path heading and the side, so every
+  # marker reads head-on shortly before the robot draws level with it.
+  - {at_waypoint: 0, along_m: 3.0, side: left, offset_m: 0.8}    # east aisle, northbound
+  - {at_waypoint: 0, along_m: 6.5, side: right, offset_m: 0.8}
+  - {at_waypoint: 1, along_m: 3.5, side: left, offset_m: 0.8}    # north cross-aisle
+  - {at_waypoint: 2, along_m: 5.0, side: right, offset_m: 0.8}   # west aisle, southbound
+  - {at_waypoint: 2, along_m: 11.5, side: left, offset_m: 0.8}
+  - {at_waypoint: 2, along_m: 18.5, side: right, offset_m: 0.8}
+  - {at_waypoint: 4, along_m: 12.0, side: left, offset_m: 0.8}   # east aisle, far end
+  - {at_waypoint: 4, along_m: 1.5, side: right, offset_m: 0.8}   # east aisle, northbound
+  - {at_waypoint: 4, along_m: 8.5, side: left, offset_m: 0.8}
+
+  # End-of-lane markers: one down each straight, a metre past the corner and square to
+  # the lane, so the robot drives at it head-on for the length of the approach. These are
+  # the long-range samples -- 25 m out on the two aisles, where apparent diameter falls
+  # below the decode floor and climbs back through it.
+  #
+  # `slot` reuses an id the layout already carries. Safe only because each pair is never
+  # detectable in the same frame -- verified under a pessimistic sweep (FOV x1.25, 6 px
+  # floor, camera +/-0.5 m off line and mis-aimed +/-12 deg) by `run_sim.py --verify-path`.
+  - {position: [ 0.0,  11.0], yaw_deg: 270.0, slot: 3}   # east aisle, facing south
+  - {position: [-6.0,  10.0], yaw_deg:   0.0, slot: 4}   # north cross-aisle, facing east
+  - {position: [-5.0, -16.0], yaw_deg:  90.0, slot: 0}   # west aisle, facing north
+  - {position: [ 1.0, -15.0], yaw_deg: 180.0, slot: 1}   # south cross-aisle, facing west
+
+recording:
+  topics:
+    - /camera/image_raw
+    - /camera/camera_info
+    - /clock
+    - /odom_ground_truth
+    - /camera_ground_truth
+    - /marker_ground_truth
+    - /tf
+    - /tf_static

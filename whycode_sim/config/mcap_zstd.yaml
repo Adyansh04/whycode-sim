@@ -1,0 +1,12 @@
+# MCAP writer options for bag recording.
+#
+# Zstd chunk compression lives inside the MCAP container, so rosbag2, the Python mcap
+# library and Foxglove all decompress it transparently. rosbag2's own --compression-mode
+# shrinks the bag too, but the result cannot be handed to a SequentialReader, which is how
+# the analysis reads it.
+#
+# Measured on a 84 s driving loop at 1280x720 rgb8 30 Hz: 6.53 GiB of chunk payload
+# becomes 3.49 GiB, lossless. A static scene compresses far harder; a moving camera does
+# not, so size the disk from this figure rather than a bring-up test.
+compression: "Zstd"
+chunkSize: 4194304

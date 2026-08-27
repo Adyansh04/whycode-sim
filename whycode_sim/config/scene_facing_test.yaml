@@ -1,0 +1,90 @@
+# Facing-angle calibration scene: eight markers at a fixed 3 m range, one per
+# incidence angle from 0 to 70 degrees. Bare ground plane, static robot.
+#
+# Renders every incidence in a single frame so the detector's decode rate and pose error
+# can be read off against viewing angle under identical lighting and range. Used to pick
+# marker.facing_angle_deg in scene.yaml.
+
+headless: true
+
+world:
+  environment: null
+  offset: [0.0, 0.0, 0.0]
+  yaw_deg: 0.0
+
+render:
+  antialiasing: DLAA
+  shadows: false
+  motion_blur: false
+
+camera:
+  width: 1280
+  height: 720
+  hfov_deg: 80.0
+  fps: 30
+  near_clip: 0.02
+  far_clip: 300.0
+  frame_id: "camera_link"
+  mount:
+    position: [0.28, 0.0, 0.62]
+    rpy_deg: [0.0, 0.0, 0.0]
+
+robot:
+  usd_path: "/Isaac/Robots/NVIDIA/NovaCarter/nova_carter.usd"
+  chassis_prim: "chassis_link"
+  wheel_radius_m: 0.1400
+  wheel_distance_m: 0.6201
+
+marker:
+  family: whycode
+  families:
+    whycode:
+      textures: [whycode_1, whycode_2, whycode_3, whycode_4,
+                 whycode_5, whycode_6, whycode_7, whycode_8]
+      ids: [8, 6, 7, 3, 4, 5, 1, 2]
+    apriltag:
+      textures: [tag36_11_00000, tag36_11_00001, tag36_11_00002, tag36_11_00003,
+                 tag36_11_00004, tag36_11_00005, tag36_11_00006, tag36_11_00007]
+      ids: [0, 1, 2, 3, 4, 5, 6, 7]
+  size_m: 0.2
+  height_m: 0.62
+  facing_angle_deg: 45
+  emissive_intensity: 300.0
+  post:
+    radius: 0.02
+    height_offset: 0.0
+    colour: [0.3, 0.3, 0.3]
+
+visibility:
+  max_incidence_deg: 85.0
+  min_diameter_px: 5.0
+  frustum_margin_px: 0.0
+
+path:
+  loop: false
+  speed_mps: 0.0
+  lookahead_m: 1.0
+  max_yaw_rate_rps: 1.0
+  corner_slowdown: 0.8
+  goal_tolerance_m: 0.3
+  waypoints:
+    - [0.0, 0.0]
+    - [10.0, 0.0]
+
+markers:
+  # Range fixed at 3.0 m from the camera; bearing spread across the frame so all eight
+  # appear at once. yaw_deg is set so each sits at its target incidence exactly.
+  - {position: [2.8379, -1.5675, 0.62], yaw_deg: 148.5000}   # incidence 0 deg
+  - {position: [3.0516, -1.1481, 0.62], yaw_deg: 167.5000}   # incidence 10 deg
+  - {position: [3.1971, -0.7003, 0.62], yaw_deg: 186.5000}   # incidence 20 deg
+  - {position: [3.2708, -0.2354, 0.62], yaw_deg: 205.5000}   # incidence 30 deg
+  - {position: [3.2708, 0.2354, 0.62], yaw_deg: 224.5000}   # incidence 40 deg
+  - {position: [3.1971, 0.7003, 0.62], yaw_deg: 243.5000}   # incidence 50 deg
+  - {position: [3.0516, 1.1481, 0.62], yaw_deg: 262.5000}   # incidence 60 deg
+  - {position: [2.8379, 1.5675, 0.62], yaw_deg: 281.5000}   # incidence 70 deg
+
+recording:
+  topics:
+    - /camera/image_raw
+    - /camera/camera_info
+    - /clock

@@ -1,0 +1,88 @@
+# Bring-up scene: ground plane, straight path, three markers.
+#
+# For debugging the OmniGraph wiring, intrinsics and marker materials without waiting on
+# the warehouse asset to stream. Use it for the intrinsics and frame-convention checks.
+
+headless: true
+
+world:
+  environment: null       # null means a bare ground plane instead of a USD environment
+  offset: [0.0, 0.0, 0.0]
+  yaw_deg: 0.0
+
+render:
+  antialiasing: DLAA
+  shadows: false
+  motion_blur: false
+
+camera:
+  width: 1280
+  height: 720
+  hfov_deg: 80.0
+  fps: 30
+  near_clip: 0.02
+  far_clip: 300.0
+  frame_id: "camera_link"
+  mount:
+    position: [0.28, 0.0, 0.62]
+    rpy_deg: [0.0, 0.0, 0.0]
+
+robot:
+  usd_path: "/Isaac/Robots/NVIDIA/NovaCarter/nova_carter.usd"
+  chassis_prim: "chassis_link"
+  # Measured off the asset with --introspect, not transcribed. The radius is the
+  # wheel centre height above the floor; the track width is the lateral separation.
+  wheel_radius_m: 0.1400
+  wheel_distance_m: 0.6201
+
+marker:
+  family: whycode
+  families:
+    whycode:
+      textures: [whycode_1, whycode_2, whycode_3]
+      ids: [8, 6, 7]        # measured, see scripts/decode_marker_ids/
+    apriltag:
+      textures: [tag36_11_00000, tag36_11_00001, tag36_11_00002]
+      ids: [0, 1, 2]
+  size_m: 0.2
+  height_m: 0.62          # level with the camera, so incidence is purely horizontal
+  facing_angle_deg: 45
+  emissive_intensity: 300.0
+  post:
+    radius: 0.02
+    height_offset: 0.0
+    colour: [0.3, 0.3, 0.3]
+
+visibility:
+  max_incidence_deg: 70.0
+  min_diameter_px: 15.0
+  frustum_margin_px: 0.0
+
+path:
+  loop: false
+  speed_mps: 0.4
+  lookahead_m: 1.0
+  max_yaw_rate_rps: 1.0
+  corner_slowdown: 0.8
+  goal_tolerance_m: 0.3
+  waypoints:
+    - [0.0, 0.0]
+    - [12.0, 0.0]
+
+markers:
+  # One square-on marker directly ahead for the scale and intrinsics checks, and one
+  # offset to each side to confirm the sign of the Y axis in ground truth.
+  - {position: [2.0, 0.0, 0.62], yaw_deg: 180.0}
+  - {at_waypoint: 0, along_m: 5.0, side: left, offset_m: 1.5}
+  - {at_waypoint: 0, along_m: 8.0, side: right, offset_m: 1.5}
+
+recording:
+  topics:
+    - /camera/image_raw
+    - /camera/camera_info
+    - /clock
+    - /odom_ground_truth
+    - /camera_ground_truth
+    - /marker_ground_truth
+    - /tf
+    - /tf_static
