@@ -3,7 +3,7 @@
 Reads the bag only, with Isaac stopped, so it also tests whether a recording stands on
 its own.
 
-    ros2 launch whycode_sim replay.launch.py bag:=/root/data/warehouse_loop
+    ros2 launch whycode_sim replay.launch.py bag:=/root/data/whycode_1lap
 
 ground_truth_viz_node converts the custom ground-truth message into markers RViz can
 render. What to look for: green plates sitting on the printed markers in the Camera view.
@@ -23,7 +23,7 @@ def generate_launch_description():
 
     bag_arg = DeclareLaunchArgument(
         "bag",
-        default_value="/root/data/warehouse_loop",
+        default_value="/root/data/whycode_1lap",
         description="Bag directory to replay",
     )
 

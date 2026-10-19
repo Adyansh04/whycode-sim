@@ -82,9 +82,3 @@ markers:
   - {position: [3.1971, 0.7003, 0.62], yaw_deg: 243.5000}   # incidence 50 deg
   - {position: [3.0516, 1.1481, 0.62], yaw_deg: 262.5000}   # incidence 60 deg
   - {position: [2.8379, 1.5675, 0.62], yaw_deg: 281.5000}   # incidence 70 deg
-
-recording:
-  topics:
-    - /camera/image_raw
-    - /camera/camera_info
-    - /clock

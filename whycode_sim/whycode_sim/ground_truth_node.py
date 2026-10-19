@@ -24,6 +24,7 @@ from sensor_msgs.msg import CameraInfo
 
 from whycode_sim import scene_config
 from whycode_sim.geometry import (
+    camera_intrinsics,
     evaluate_marker,
     matrix_to_quaternion,
     quaternion_to_matrix,
@@ -51,10 +52,15 @@ class GroundTruthNode(Node):
         self.limits = self.config.visibility
         self.frame_id = self.config.camera.frame_id
 
-        # Intrinsics come from the live camera_info rather than the scene file, so a
-        # resolution change cannot leave the projection and the renderer disagreeing.
-        self.intrinsics = None
-        self.image_size = None
+        # Start from the intrinsics the scene implies, then follow the live camera_info, so a
+        # resolution change cannot leave the projection and the renderer disagreeing. Waiting
+        # for camera_info instead cost up to 2 s of ground truth at the start of a recording.
+        camera = self.config.camera
+        self.intrinsics = camera_intrinsics(
+            camera.width, camera.height, camera.hfov_deg
+        )
+        self.image_size = (camera.width, camera.height)
+        self.live_intrinsics = False
         self.create_subscription(
             CameraInfo, "/camera/camera_info", self._on_camera_info, 1
         )
@@ -80,18 +86,19 @@ class GroundTruthNode(Node):
 
     def _on_camera_info(self, msg):
         intrinsics = (msg.k[0], msg.k[4], msg.k[2], msg.k[5])
-        if self.intrinsics is None:
-            self.get_logger().info(
+        if not self.live_intrinsics:
+            self.live_intrinsics = True
+            drift = max(abs(a - b) for a, b in zip(intrinsics, self.intrinsics))
+            log = self.get_logger().warn if drift > 1e-3 else self.get_logger().info
+            log(
                 f"intrinsics fx={intrinsics[0]:.4f} fy={intrinsics[1]:.4f} "
-                f"cx={intrinsics[2]:.1f} cy={intrinsics[3]:.1f} at {msg.width}x{msg.height}"
+                f"cx={intrinsics[2]:.1f} cy={intrinsics[3]:.1f} at {msg.width}x{msg.height}, "
+                f"{drift:.2e} px from the scene's"
             )
         self.intrinsics = intrinsics
         self.image_size = (msg.width, msg.height)
 
     def _on_frame(self, camera_pose, occlusion):
-        if self.intrinsics is None:
-            return
-
         position = camera_pose.pose.pose.position
         camera_position = np.array([position.x, position.y, position.z])
         rotation = camera_pose.pose.pose.orientation

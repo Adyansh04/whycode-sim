@@ -59,6 +59,7 @@ def generate_launch_description():
             "scene_config": LaunchConfiguration("scene_config"),
             "follow": LaunchConfiguration("follow"),
             "record": LaunchConfiguration("record"),
+            "laps": "0",
         }.items(),
     )
 

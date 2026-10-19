@@ -100,6 +100,7 @@ path:
   max_yaw_rate_rps: 1.0
   corner_slowdown: 0.8      # higher slows more through tight curvature
   goal_tolerance_m: 0.3
+  start_delay_s: 2.0        # sim seconds held at the spawn, so a recording opens at rest
   # A 5 x 25 m circuit between shelves: up one rack aisle, across, down the parallel
   # aisle, back. 60 m per lap. `--survey` requires the perimeter to be flanked by racks
   # within 1.5 m on both sides; without that the largest drivable circuit is the
@@ -153,14 +154,3 @@ markers:
   - {position: [-6.0,  10.0], yaw_deg:   0.0, slot: 4}   # north cross-aisle, facing east
   - {position: [-5.0, -16.0], yaw_deg:  90.0, slot: 0}   # west aisle, facing north
   - {position: [ 1.0, -15.0], yaw_deg: 180.0, slot: 1}   # south cross-aisle, facing west
-
-recording:
-  topics:
-    - /camera/image_raw
-    - /camera/camera_info
-    - /clock
-    - /odom_ground_truth
-    - /camera_ground_truth
-    - /marker_ground_truth
-    - /tf
-    - /tf_static
