@@ -37,10 +37,17 @@ def _iter_geometry(stage, root_path):
         yield prim, box
 
 
-def occupancy(stage, root_path, resolution=0.5, margin=0.0):
+def occupancy(
+    stage,
+    root_path,
+    resolution=0.5,
+    margin=0.0,
+    max_floor_clearance=OBSTACLE_MAX_FLOOR_CLEARANCE_M,
+):
     """Build a floor occupancy grid. Returns (grid, origin_xy, resolution).
 
-    grid[row, col] is True where geometry blocks the robot. Row is the Y axis.
+    grid[row, col] is True where geometry whose underside is below `max_floor_clearance`
+    stands. Row is the Y axis.
     """
     cells = []
     minimum = np.array([np.inf, np.inf])
@@ -51,7 +58,7 @@ def occupancy(stage, root_path, resolution=0.5, margin=0.0):
         minimum = np.minimum(minimum, [low[0], low[1]])
         maximum = np.maximum(maximum, [high[0], high[1]])
         # Skip the floor itself and anything overhead.
-        if high[2] < OBSTACLE_MIN_HEIGHT_M or low[2] > OBSTACLE_MAX_FLOOR_CLEARANCE_M:
+        if high[2] < OBSTACLE_MIN_HEIGHT_M or low[2] > max_floor_clearance:
             continue
         cells.append(
             (low[0] - margin, low[1] - margin, high[0] + margin, high[1] + margin)

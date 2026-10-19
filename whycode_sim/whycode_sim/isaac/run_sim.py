@@ -80,6 +80,11 @@ def parse_args(argv=None):
         help="check the configured loop and marker positions for clearance, then exit",
     )
     parser.add_argument(
+        "--save-map",
+        metavar="NPZ",
+        help="with --verify-path, save the floor occupancy grid for scripts/draw_loop_map.py",
+    )
+    parser.add_argument(
         "--probe-nodes",
         action="store_true",
         help="print the attribute names of every OmniGraph node type used, then exit",
@@ -207,6 +212,40 @@ def _run(simulation_app, args, config):
         markers_ok = survey.verify_markers(stage, scene["markers"])
         survey.predict_visibility(config, scene["markers"])
         ids_ok = survey.verify_shared_ids(config, scene["markers"])
+        if args.save_map:
+            import numpy as np
+
+            from pxr import Usd, UsdGeom
+
+            grid, origin, resolution = survey.occupancy(
+                stage, "/World/Environment", resolution=0.1
+            )
+            # A second grid at the robot's own height separates overhead structure, which
+            # the robot drives under, from what actually blocks it.
+            robot_box = (
+                UsdGeom.BBoxCache(Usd.TimeCode.Default(), [UsdGeom.Tokens.default_])
+                .ComputeWorldBound(stage.GetPrimAtPath(robot.ROBOT_PATH))
+                .ComputeAlignedBox()
+            )
+            robot_top = float(robot_box.GetMax()[2]) + 0.1
+            blocking, _, _ = survey.occupancy(
+                stage,
+                "/World/Environment",
+                resolution=0.1,
+                max_floor_clearance=robot_top,
+            )
+            np.savez(
+                args.save_map,
+                grid=grid,
+                blocking=blocking,
+                origin=origin,
+                resolution=resolution,
+                robot_top=robot_top,
+            )
+            print(
+                f"[verify] occupancy map saved to {args.save_map} "
+                f"(robot clears {robot_top:.2f} m)"
+            )
         print(
             f"[verify] result: path {'clear' if path_ok else 'BLOCKED'}, "
             f"markers {'clear' if markers_ok else 'OBSTRUCTED'}, "
