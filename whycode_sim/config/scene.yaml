@@ -103,18 +103,17 @@ path:
   corner_slowdown: 0.8      # higher slows more through tight curvature
   goal_tolerance_m: 0.3
   start_delay_s: 2.0        # sim seconds held at the spawn, so a recording opens at rest
-  # A 5 x 25 m circuit between shelves: up one rack aisle, across, down the parallel
-  # aisle, back. 60 m per lap. `--survey` requires the perimeter to be flanked by racks
-  # within 1.5 m on both sides; without that the largest drivable circuit is the
-  # warehouse's open apron, which is useless here.
+  # Up one aisle, across the top, down the parallel aisle, and back round just past the rack
+  # ends: 47.7 m, all among the shelving. The only two aisles clear end to end; the others sit
+  # inside double racks. Review a change on the floor plan (scripts/draw_loop_map.py).
   #
   # Waypoint 0 is the spawn, mid-aisle, with 1.7 m of free space either side.
   waypoints:                # world frame (== odom), metres
     - [0.0, 0.0]
     - [0.0, 10.0]
-    - [-5.0, 10.0]
-    - [-5.0, -15.0]
-    - [0.0, -15.0]
+    - [-4.85, 10.0]
+    - [-4.85, -9.0]
+    - [0.0, -9.0]
 
 markers:
   # Placement is derived from the path unless an entry gives an explicit `position`.
@@ -124,35 +123,32 @@ markers:
   #
   # Slots are filled from marker.families in order, so this list is geometry only.
   #
-  # Produced by `run_sim.py --suggest-markers 9 --marker-offset 0.8`, which measures the
-  # free width to either side every half metre along the loop and spreads the picks
-  # evenly, alternating sides. Nine is the most both families supply.
+  # Side markers alternate left and right down both aisles and across both turns. Every point
+  # on this loop fits a 0.8 m offset (`run_sim.py --suggest-markers` reports the free width);
+  # placements avoid the spawn, where the robot starts already abeam, and the first metres
+  # after a turn, where a marker is never both head-on and in frame.
   #
-  # A marker reads head-on at offset/sin(facing_angle_deg), so 0.8 m at 30 deg gives 1.60 m
-  # range and 95 px. The offset is 0.8 rather than the usual 1.0-2.0 because these rack
-  # aisles pinch to 1.0 m of free space on the tighter side.
-  #
-  # facing_angle_deg is applied against the local path heading and the side, so every
-  # marker reads head-on shortly before the robot draws level with it.
+  # A marker reads head-on at offset/sin(facing_angle_deg): 0.8 m at 30 deg gives 1.60 m range
+  # and 95 px. The offset is 0.8 rather than the usual 1.0-2.0 because these rack aisles pinch
+  # to 1.0 m of free space on the tighter side.
   - {at_waypoint: 0, along_m: 3.0, side: left, offset_m: 0.8}    # east aisle, northbound
   - {at_waypoint: 0, along_m: 6.5, side: right, offset_m: 0.8}
-  - {at_waypoint: 1, along_m: 3.5, side: left, offset_m: 0.8}    # north cross-aisle
-  - {at_waypoint: 2, along_m: 5.0, side: right, offset_m: 0.8}   # west aisle, southbound
-  - {at_waypoint: 2, along_m: 11.5, side: left, offset_m: 0.8}
-  - {at_waypoint: 2, along_m: 18.5, side: right, offset_m: 0.8}
-  - {at_waypoint: 4, along_m: 12.0, side: left, offset_m: 0.8}   # east aisle, far end
-  - {at_waypoint: 4, along_m: 1.5, side: right, offset_m: 0.8}   # east aisle, northbound
-  - {at_waypoint: 4, along_m: 8.5, side: left, offset_m: 0.8}
+  - {at_waypoint: 1, along_m: 3.5, side: left, offset_m: 0.8}    # top cross-aisle
+  - {at_waypoint: 2, along_m: 4.0, side: right, offset_m: 0.8}   # west aisle, southbound
+  - {at_waypoint: 2, along_m: 9.5, side: left, offset_m: 0.8}
+  - {at_waypoint: 2, along_m: 15.0, side: right, offset_m: 0.8}
+  - {at_waypoint: 2, along_m: 17.5, side: left, offset_m: 0.8}
+  - {at_waypoint: 4, along_m: 2.5, side: right, offset_m: 0.8}   # east aisle, back to the spawn
+  - {at_waypoint: 4, along_m: 6.0, side: left, offset_m: 0.8}
 
-  # End-of-lane markers: one down each straight, a metre past the corner and square to
-  # the lane, so the robot drives at it head-on for the length of the approach. These are
-  # the long-range samples -- 25 m out on the two aisles, where apparent diameter falls
-  # below the decode floor and climbs back through it.
+  # End-of-lane markers: one down each straight, a metre past the corner and square to the
+  # lane, so the robot drives at it head-on for the whole approach. On the 19 m aisles these
+  # are the long-range samples, where apparent diameter climbs up through the decode floor.
   #
-  # `slot` reuses an id the layout already carries. Safe only because each pair is never
-  # detectable in the same frame -- verified under a pessimistic sweep (FOV x1.25, 6 px
+  # `slot` reuses an id the layout already carries. Safe only while each pair is never
+  # detectable in the same frame -- verified under a pessimistic sweep (FOV x1.25, 10 px
   # floor, camera +/-0.5 m off line and mis-aimed +/-12 deg) by `run_sim.py --verify-path`.
-  - {position: [ 0.0,  11.0], yaw_deg: 270.0, slot: 3}   # east aisle, facing south
-  - {position: [-6.0,  10.0], yaw_deg:   0.0, slot: 4}   # north cross-aisle, facing east
-  - {position: [-5.0, -16.0], yaw_deg:  90.0, slot: 0}   # west aisle, facing north
-  - {position: [ 1.0, -15.0], yaw_deg: 180.0, slot: 1}   # south cross-aisle, facing west
+  - {position: [ 0.0,   11.0], yaw_deg: 270.0, slot: 3}   # east aisle, facing south
+  - {position: [-5.85,  10.0], yaw_deg:   0.0, slot: 5}   # top cross-aisle, facing east
+  - {position: [-4.85, -10.0], yaw_deg:  90.0, slot: 0}   # west aisle, facing north
+  - {position: [ 1.0,   -9.0], yaw_deg: 180.0, slot: 1}   # bottom turn, facing west
