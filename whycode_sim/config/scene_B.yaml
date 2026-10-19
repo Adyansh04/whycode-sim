@@ -1,0 +1,37 @@
+# Path B: path A plus a sweep west along the rack fronts and back on a second lane, 72.4 m.
+# The rack-front lanes run 1.2-3.4 m in front of the rack ends, inside the corridor the
+# partition bars bound to the south. Everything but the path and markers comes from scene.yaml.
+extends: scene.yaml
+
+path:
+  waypoints:
+    - [0.0, 0.0]
+    - [0.0, 10.0]
+    - [-4.85, 10.0]
+    - [-4.85, -8.6]
+    - [-15.3, -8.6]
+    - [-15.3, -10.9]
+    - [0.0, -10.9]
+
+markers:
+  # Ids are reused across the layout (`slot`), assigned so no two markers sharing one are
+  # ever detectable together; `run_sim.py --verify-path` checks it.
+  # Side markers, alternating; offsets shrink toward the rack ends where the lane is close.
+  - {at_waypoint: 0, along_m: 3.0, side: left, offset_m: 0.8, slot: 2}     # east aisle, northbound
+  - {at_waypoint: 0, along_m: 6.5, side: right, offset_m: 0.8, slot: 7}
+  - {at_waypoint: 1, along_m: 3.5, side: left, offset_m: 0.8, slot: 8}     # top cross-aisle
+  - {at_waypoint: 2, along_m: 4.0, side: right, offset_m: 0.8, slot: 1}    # west aisle, southbound
+  - {at_waypoint: 2, along_m: 9.5, side: left, offset_m: 0.8, slot: 3}
+  - {at_waypoint: 2, along_m: 15.0, side: right, offset_m: 0.8, slot: 0}
+  - {at_waypoint: 3, along_m: 3.5, side: right, offset_m: 0.6, slot: 2}    # rack fronts, westbound
+  - {at_waypoint: 3, along_m: 8.0, side: left, offset_m: 0.8, slot: 4}
+  - {at_waypoint: 5, along_m: 4.5, side: right, offset_m: 0.7, slot: 7}    # outer lane, eastbound
+  - {at_waypoint: 5, along_m: 9.0, side: left, offset_m: 0.8, slot: 3}
+  - {at_waypoint: 6, along_m: 4.4, side: right, offset_m: 0.8, slot: 5}    # east aisle, back to spawn
+  - {at_waypoint: 6, along_m: 7.9, side: left, offset_m: 0.8, slot: 6}
+  # End-of-lane markers, a metre past each corner, square to the lane.
+  - {position: [ 0.0,   11.0], yaw_deg: 270.0, slot: 6}   # east aisle
+  - {position: [-5.85,  10.0], yaw_deg:   0.0, slot: 0}   # top cross-aisle
+  - {position: [-4.85,  -9.6], yaw_deg:  90.0, slot: 1}   # west aisle
+  - {position: [-16.15, -8.6], yaw_deg:   0.0, slot: 5}   # rack fronts, westbound
+  - {position: [ 1.0,  -10.9], yaw_deg: 180.0, slot: 4}   # outer lane, eastbound

@@ -1,0 +1,41 @@
+# Path C: path A plus sweeps west and east along the rack fronts, 94.0 m. The east sweep passes
+# the cluttered bay (forklift, cones). Everything but the path and markers comes from scene.yaml.
+extends: scene.yaml
+
+path:
+  waypoints:
+    - [0.0, 0.0]
+    - [0.0, 10.0]
+    - [-4.85, 10.0]
+    - [-4.85, -8.6]
+    - [-15.3, -8.6]
+    - [-15.3, -10.9]
+    - [10.8, -10.9]
+    - [10.8, -8.6]
+    - [0.0, -8.6]
+
+markers:
+  # Ids are reused across the layout (`slot`), assigned so no two markers sharing one are
+  # ever detectable together; `run_sim.py --verify-path` checks it.
+  - {at_waypoint: 0, along_m: 3.0, side: left, offset_m: 0.8, slot: 5}     # east aisle, northbound
+  - {at_waypoint: 0, along_m: 6.5, side: right, offset_m: 0.8, slot: 3}
+  - {at_waypoint: 1, along_m: 3.5, side: left, offset_m: 0.8, slot: 4}     # top cross-aisle
+  - {at_waypoint: 2, along_m: 4.0, side: right, offset_m: 0.8, slot: 5}    # west aisle, southbound
+  - {at_waypoint: 2, along_m: 9.5, side: left, offset_m: 0.8, slot: 6}
+  - {at_waypoint: 2, along_m: 15.0, side: right, offset_m: 0.8, slot: 2}
+  - {at_waypoint: 3, along_m: 3.5, side: right, offset_m: 0.6, slot: 7}    # west rack fronts, westbound
+  - {at_waypoint: 3, along_m: 8.0, side: left, offset_m: 0.8, slot: 8}
+  - {at_waypoint: 5, along_m: 4.5, side: right, offset_m: 0.7, slot: 3}    # outer lane, eastbound
+  - {at_waypoint: 5, along_m: 9.0, side: left, offset_m: 0.8, slot: 6}
+  - {at_waypoint: 5, along_m: 18.0, side: right, offset_m: 0.7, slot: 1}
+  - {at_waypoint: 5, along_m: 23.0, side: left, offset_m: 0.8, slot: 7}
+  - {at_waypoint: 7, along_m: 3.5, side: right, offset_m: 0.6, slot: 0}    # east rack fronts, westbound
+  - {at_waypoint: 7, along_m: 7.5, side: left, offset_m: 0.8, slot: 8}
+  - {at_waypoint: 8, along_m: 2.5, side: right, offset_m: 0.8, slot: 0}    # east aisle, back to spawn
+  - {at_waypoint: 8, along_m: 5.6, side: left, offset_m: 0.8, slot: 1}
+  - {position: [ 0.0,   11.0], yaw_deg: 270.0, slot: 0}   # east aisle
+  - {position: [-5.85,  10.0], yaw_deg:   0.0, slot: 2}   # top cross-aisle
+  - {position: [-4.85,  -9.6], yaw_deg:  90.0, slot: 3}   # west aisle
+  - {position: [-16.15, -8.6], yaw_deg:   0.0, slot: 1}   # west rack fronts
+  - {position: [ 11.8, -10.9], yaw_deg: 180.0, slot: 2}   # outer lane, eastbound
+  - {position: [ -1.0,  -8.6], yaw_deg:   0.0, slot: 4}   # east rack fronts, westbound

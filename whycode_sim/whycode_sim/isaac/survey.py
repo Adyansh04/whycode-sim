@@ -761,17 +761,17 @@ def predict_visibility(config, markers, step=0.25):
         distance += step
 
     print(f"[visibility] swept {samples} camera poses over {total:.0f} m of path")
-    # The sweep follows the centreline exactly, while the robot lags its lookahead and
-    # carries the camera forward of it, so a few percent here comes out as zero in a
-    # recording. Flag marginal, not just zero.
-    marginal_share = 4.0
+    # The sweep follows the centreline exactly, while the robot lags its lookahead, so a
+    # marker in view for under ~2.4 m of travel (measured on the 60 m loop) came out as zero
+    # in a recording. Absolute, so a longer loop is not judged more harshly.
+    marginal_m = 2.4
     unseen = []
     for index, marker in enumerate(markers):
         entry = counts[index]
         share = 100.0 * entry["seen"] / samples
         if not entry["seen"]:
             status, marginal = "NEVER VISIBLE", True
-        elif share < marginal_share:
+        elif entry["seen"] * step < marginal_m:
             status, marginal = "MARGINAL", True
         else:
             status, marginal = "ok", False

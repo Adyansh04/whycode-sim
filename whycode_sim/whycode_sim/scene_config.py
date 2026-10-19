@@ -30,14 +30,31 @@ def _namespace(value):
 def load(path):
     """Load and validate a scene config."""
     path = Path(path)
-    with path.open() as handle:
-        raw = yaml.safe_load(handle)
-
-    config = _namespace(raw)
+    config = _namespace(_read(path))
     config.path_on_disk = path
     config.package_root = path.parent.parent
     _validate(config)
     return config
+
+
+def _read(path):
+    """Parsed YAML, with `extends: <file>` resolved: a scene that differs only in its path
+    and markers names its base rather than copying the camera, render and marker setup."""
+    with path.open() as handle:
+        raw = yaml.safe_load(handle)
+    base = raw.pop("extends", None)
+    return raw if base is None else _merge(_read(path.parent / base), raw)
+
+
+def _merge(base, override):
+    """Mappings merge key by key; anything else, lists included, is replaced."""
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
 
 
 def _validate(config):
