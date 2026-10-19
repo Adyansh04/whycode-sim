@@ -32,7 +32,9 @@ camera:
   fps: 30
   near_clip: 0.02
   far_clip: 300.0
-  frame_id: "camera_link"   # must equal whycon_config_sim.yaml ros_interface.parent_frame_id
+  frame_id: "camera_link"   # body frame (X fwd, Y left, Z up): ground truth and the detector
+                            # report here; must equal whycon_config_sim.yaml parent_frame_id
+  optical_frame_id: "camera_optical_frame"   # the image's frame (Z fwd, X right, Y down)
   mount:                    # camera pose in the chassis frame (X fwd, Y left, Z up)
     position: [0.28, 0.0, 0.62]
     rpy_deg: [0.0, 0.0, 0.0]

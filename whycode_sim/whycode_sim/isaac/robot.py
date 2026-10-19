@@ -9,6 +9,7 @@ import math
 from pxr import Gf, UsdGeom
 
 from whycode_sim.geometry import (
+    R_USD_TO_GT,
     camera_intrinsics,
     matrix_to_quaternion,
     usd_camera_aperture,
@@ -17,9 +18,6 @@ from whycode_sim.geometry import (
 from whycode_sim.isaac import usd_utils
 
 ROBOT_PATH = "/World/Robot"
-# The prim name becomes the TF child frame, and the image is stamped with the frame from
-# scene.yaml. Matching them lets RViz resolve the camera.
-CAMERA_NAME = "camera_link"
 
 # The asset moved between Isaac releases; resolve at runtime rather than trust one
 # version's docs.
@@ -54,10 +52,11 @@ def resolve_robot_usd(assets_root, configured_path=None):
 
 
 def spawn(stage, assets_root, config):
-    """Reference the robot at the world origin.
+    """Reference the robot at the world origin, facing along the first path segment.
 
-    The environment is shifted around it instead, so odom and world coincide and no
-    offset threads through the follower, the ground truth or the bag.
+    The environment is shifted around it instead, so no offset threads through the
+    follower, the ground truth or the bag. Odometry is published from the chassis world
+    pose, so odom stays equal to world whatever the heading.
     """
     from isaacsim.core.utils.stage import add_reference_to_stage
 
@@ -65,7 +64,13 @@ def spawn(stage, assets_root, config):
     print(f"[robot] asset: {usd_path}")
     add_reference_to_stage(usd_path, ROBOT_PATH)
 
-    usd_utils.set_translate(stage.GetPrimAtPath(ROBOT_PATH), (0.0, 0.0, 0.0))
+    (x0, y0), (x1, y1) = (point[:2] for point in config.path.waypoints[:2])
+    yaw = math.atan2(y1 - y0, x1 - x0)
+    robot = stage.GetPrimAtPath(ROBOT_PATH)
+    usd_utils.set_translate(robot, (0.0, 0.0, 0.0))
+    usd_utils.set_orient(
+        robot, Gf.Quatd(math.cos(yaw / 2.0), 0.0, 0.0, math.sin(yaw / 2.0))
+    )
     return usd_path
 
 
@@ -85,13 +90,20 @@ def find_chassis_path(stage, hint):
 
 
 def attach_camera(stage, chassis_path, config):
-    """Create the benchmark camera on the chassis and return its prim path.
+    """Create the benchmark camera on the chassis. Returns (body_path, camera_path).
+
+    Two prims, the standard ROS pair: an Xform in the body convention (X forward, Y left,
+    Z up) named after `camera.frame_id`, which ground truth and the detector report in,
+    and beneath it the USD camera named after `camera.optical_frame_id`, which the image is
+    stamped with. Prim names become TF frames, and Isaac publishes a camera prim in the
+    optical convention, so the body frame needs a prim of its own.
 
     Intrinsics derive from width/height/hfov in the scene config, so a resolution change
     propagates rather than leaving a stale focal length.
     """
     camera = config.camera
-    camera_path = f"{chassis_path}/{CAMERA_NAME}"
+    body_path = f"{chassis_path}/{camera.frame_id}"
+    camera_path = f"{body_path}/{camera.optical_frame_id}"
 
     prim = UsdGeom.Camera.Define(stage, camera_path)
     focal_length, horizontal_aperture, vertical_aperture = usd_camera_aperture(
@@ -105,20 +117,25 @@ def attach_camera(stage, chassis_path, config):
     )
     prim.CreateProjectionAttr(UsdGeom.Tokens.perspective)
 
-    # The mount is in the body frame (X fwd, Y left, Z up) but a USD camera looks down
-    # local -Z. Use the same basis-vector helper as the ground-truth maths: hand-composed
-    # Euler angles here point the camera down a different world axis, and every
-    # ground-truth pose then comes out permuted.
+    # The mount is in the body frame but a USD camera looks down local -Z. Build the full
+    # camera basis with the same helper as the ground-truth maths (hand-composed Euler
+    # angles point it down a different axis), then split it: a camera aimed along +X has
+    # basis R_USD_TO_GT, so the body frame is basis @ R_USD_TO_GT.T and the camera sits
+    # beneath it at R_USD_TO_GT.
     roll, pitch, yaw = (math.radians(angle) for angle in camera.mount.rpy_deg)
     basis = usd_camera_rotation(yaw, pitch, roll)
-    qx, qy, qz, qw = matrix_to_quaternion(basis)
 
-    usd_utils.set_translate(prim.GetPrim(), camera.mount.position)
-    usd_utils.set_orient(
-        prim.GetPrim(), Gf.Quatd(float(qw), float(qx), float(qy), float(qz))
-    )
+    body = UsdGeom.Xform.Define(stage, body_path).GetPrim()
+    usd_utils.set_translate(body, camera.mount.position)
+    usd_utils.set_orient(body, _quat(basis @ R_USD_TO_GT.T))
+    usd_utils.set_orient(prim.GetPrim(), _quat(R_USD_TO_GT))
 
-    return camera_path
+    return body_path, camera_path
+
+
+def _quat(rotation):
+    x, y, z, w = matrix_to_quaternion(rotation)
+    return Gf.Quatd(float(w), float(x), float(y), float(z))
 
 
 def _measure_drive_geometry(stage, joint_paths):

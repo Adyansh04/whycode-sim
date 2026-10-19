@@ -121,7 +121,9 @@ def build(stage, config):
 
     robot_url = robot_builder.spawn(stage, assets_root, config)
     chassis_path = robot_builder.find_chassis_path(stage, config.robot.chassis_prim)
-    camera_path = robot_builder.attach_camera(stage, chassis_path, config)
+    camera_body_path, camera_path = robot_builder.attach_camera(
+        stage, chassis_path, config
+    )
 
     resolved = scene_config.resolved_markers(config)
     prim_paths = marker_builder.build(stage, config, resolved)
@@ -130,7 +132,7 @@ def build(stage, config):
     print(f"[scene] environment : {environment_url or 'ground plane'}")
     print(f"[scene] robot       : {robot_url}")
     print(f"[scene] chassis     : {chassis_path}")
-    print(f"[scene] camera      : {camera_path}")
+    print(f"[scene] camera      : {camera_body_path} (body), {camera_path} (optical)")
     print(
         f"[scene] markers     : {len(resolved)} ({config.marker.family}), placement verified"
     )
@@ -145,6 +147,7 @@ def build(stage, config):
         "assets_root": assets_root,
         "chassis_path": chassis_path,
         "camera_path": camera_path,
+        "camera_body_path": camera_body_path,
         "markers": resolved,
         "marker_prim_paths": prim_paths,
     }

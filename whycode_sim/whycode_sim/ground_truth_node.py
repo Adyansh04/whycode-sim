@@ -24,6 +24,7 @@ from sensor_msgs.msg import CameraInfo
 
 from whycode_sim import scene_config
 from whycode_sim.geometry import (
+    R_USD_TO_GT,
     camera_intrinsics,
     evaluate_marker,
     matrix_to_quaternion,
@@ -102,8 +103,10 @@ class GroundTruthNode(Node):
         position = camera_pose.pose.pose.position
         camera_position = np.array([position.x, position.y, position.z])
         rotation = camera_pose.pose.pose.orientation
-        camera_rotation = quaternion_to_matrix(
-            rotation.x, rotation.y, rotation.z, rotation.w
+        # /camera_ground_truth is in the body convention; the projection maths takes USD's.
+        camera_rotation = (
+            quaternion_to_matrix(rotation.x, rotation.y, rotation.z, rotation.w)
+            @ R_USD_TO_GT
         )
 
         # Indexed positionally, not keyed by id: the layout may carry the same id twice,

@@ -25,6 +25,7 @@ camera:
   near_clip: 0.02
   far_clip: 300.0
   frame_id: "camera_link"
+  optical_frame_id: "camera_optical_frame"
   mount:
     position: [0.28, 0.0, 0.62]
     rpy_deg: [0.0, 0.0, 0.0]

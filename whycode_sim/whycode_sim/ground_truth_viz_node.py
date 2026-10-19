@@ -141,8 +141,9 @@ class GroundTruthVizNode(Node):
 
     def _robot_trail(self, msg):
         """Where the camera has been, drawn in the world frame."""
+        # On the floor, under the odometry: at camera height it reads as a second path.
         position = msg.camera_world_pose.position
-        point = Point(x=position.x, y=position.y, z=position.z)
+        point = Point(x=position.x, y=position.y, z=0.0)
         if (
             not self.trail
             or math.dist((point.x, point.y), (self.trail[-1].x, self.trail[-1].y))

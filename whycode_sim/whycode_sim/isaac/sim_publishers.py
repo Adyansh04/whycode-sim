@@ -1,15 +1,19 @@
 """Per-frame publishers needing direct stage access.
 
-Two things the OmniGraph bridge cannot provide:
+Things the OmniGraph bridge cannot provide:
 
-  /camera_ground_truth  the camera's exact world pose. Deriving it from /tf would mean
-                        interpolation, and one tick of misalignment at 30 Hz and 1 m/s is
-                        ~33 mm, the same order as the error being measured.
+  /camera_ground_truth  the camera's exact world pose, body convention. Deriving it from
+                        /tf would mean interpolation, and one tick of misalignment at 30 Hz
+                        and 1 m/s is ~33 mm, the same order as the error being measured.
   /marker_occlusion     a line-of-sight raycast per marker; only the simulator sees the
                         collision geometry.
+  /odom_ground_truth    the chassis world pose. IsaacComputeOdometry reports relative to the
+                        starting pose, which is not world once the robot spawns facing the path.
 
-Both use plain rclpy rather than OmniGraph, which keeps the timestamp under our control.
+All use plain rclpy rather than OmniGraph, which keeps the timestamp under our control.
 """
+
+import math
 
 import numpy as np
 import rclpy
@@ -19,7 +23,7 @@ from pxr import Usd, UsdGeom
 from rclpy.node import Node
 from tf2_ros import StaticTransformBroadcaster
 
-from whycode_sim.geometry import matrix_to_quaternion
+from whycode_sim.geometry import R_USD_TO_GT, matrix_to_quaternion
 from whycode_sim_msgs.msg import MarkerOcclusion
 
 # Markers have no colliders, so a ray stopping short hit real scene geometry. Pull the
@@ -33,13 +37,18 @@ class SimPublishers(Node):
         self.config = config
         self.markers = scene["markers"]
         self.camera_path = scene["camera_path"]
+        self.chassis_path = scene["chassis_path"]
         self.frame_id = config.camera.frame_id
+        self._last_odometry = None
 
         self.camera_pose_publisher = self.create_publisher(
             Odometry, "/camera_ground_truth", 10
         )
         self.occlusion_publisher = self.create_publisher(
             MarkerOcclusion, "/marker_occlusion", 10
+        )
+        self.odometry_publisher = self.create_publisher(
+            Odometry, "/odom_ground_truth", 10
         )
 
         self._publish_static_frames()
@@ -118,7 +127,10 @@ class SimPublishers(Node):
 
     def camera_world_transform(self, stage):
         """Camera position and USD-convention rotation, read straight off the stage."""
-        prim = stage.GetPrimAtPath(self.camera_path)
+        return self._world_pose(stage, self.camera_path)
+
+    def _world_pose(self, stage, path):
+        prim = stage.GetPrimAtPath(path)
         matrix = UsdGeom.Xformable(prim).ComputeLocalToWorldTransform(
             Usd.TimeCode.Default()
         )
@@ -131,27 +143,38 @@ class SimPublishers(Node):
         return position, basis
 
     def publish(self, stage, sim_time):
-        """Publish both topics for the frame rendered at `sim_time` (seconds)."""
-        stamp = rclpy.time.Time(seconds=self.sim_time(sim_time)).to_msg()
+        """Publish every topic for the frame rendered at `sim_time` (seconds)."""
+        seconds = self.sim_time(sim_time)
+        stamp = rclpy.time.Time(seconds=seconds).to_msg()
         position, rotation = self.camera_world_transform(stage)
 
-        self._publish_camera_pose(stamp, position, rotation)
+        # The child frame is camera_link, the body convention, so convert from USD's.
+        body = rotation @ R_USD_TO_GT.T
+        self.camera_pose_publisher.publish(
+            _pose_message(stamp, "World", self.frame_id, position, body)
+        )
         self._publish_occlusion(stamp, position)
+        self._publish_odometry(stage, stamp, seconds)
 
-    def _publish_camera_pose(self, stamp, position, rotation):
-        message = Odometry()
-        message.header.stamp = stamp
-        message.header.frame_id = "world"
-        message.child_frame_id = self.frame_id
-        message.pose.pose.position.x = float(position[0])
-        message.pose.pose.position.y = float(position[1])
-        message.pose.pose.position.z = float(position[2])
-        x, y, z, w = matrix_to_quaternion(rotation)
-        message.pose.pose.orientation.x = float(x)
-        message.pose.pose.orientation.y = float(y)
-        message.pose.pose.orientation.z = float(z)
-        message.pose.pose.orientation.w = float(w)
-        self.camera_pose_publisher.publish(message)
+    def _publish_odometry(self, stage, stamp, seconds):
+        position, rotation = self._world_pose(stage, self.chassis_path)
+        yaw = math.atan2(rotation[1, 0], rotation[0, 0])
+        message = _pose_message(stamp, "odom", "base_link", position, rotation)
+
+        # Twist in the body frame, from the change since the previous tick.
+        if self._last_odometry is not None:
+            last_seconds, last_position, last_yaw = self._last_odometry
+            elapsed = seconds - last_seconds
+            if elapsed > 0.0:
+                linear = rotation.T @ ((position - last_position) / elapsed)
+                turn = math.remainder(yaw - last_yaw, math.tau)
+                twist = message.twist.twist
+                twist.linear.x, twist.linear.y, twist.linear.z = (
+                    float(v) for v in linear
+                )
+                twist.angular.z = turn / elapsed
+        self._last_odometry = (seconds, position, yaw)
+        self.odometry_publisher.publish(message)
 
     def _publish_occlusion(self, stamp, camera_position):
         message = MarkerOcclusion()
@@ -183,3 +206,16 @@ class SimPublishers(Node):
 
     def spin_once(self):
         rclpy.spin_once(self, timeout_sec=0.0)
+
+
+def _pose_message(stamp, frame_id, child_frame_id, position, rotation):
+    message = Odometry()
+    message.header.stamp = stamp
+    message.header.frame_id = frame_id
+    message.child_frame_id = child_frame_id
+    pose = message.pose.pose
+    pose.position.x, pose.position.y, pose.position.z = (float(v) for v in position)
+    x, y, z, w = matrix_to_quaternion(rotation)
+    pose.orientation.x, pose.orientation.y = float(x), float(y)
+    pose.orientation.z, pose.orientation.w = float(z), float(w)
+    return message
