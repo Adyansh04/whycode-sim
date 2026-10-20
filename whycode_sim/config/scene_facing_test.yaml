@@ -43,6 +43,7 @@ marker:
       textures: [whycode_1, whycode_2, whycode_3, whycode_4,
                  whycode_5, whycode_6, whycode_7, whycode_8]
       ids: [1, 2, 3, 4, 5, 6, 7, 8]   # whycode_N.png decodes to N
+      margin: 0.1                     # white border each side, fraction of size_m
     apriltag:
       textures: [tag36_11_00000, tag36_11_00001, tag36_11_00002, tag36_11_00003,
                  tag36_11_00004, tag36_11_00005, tag36_11_00006, tag36_11_00007]

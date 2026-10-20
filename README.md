@@ -114,6 +114,7 @@ so placement is computed once.
 | `marker.emissive_intensity` | Brightness; RTX emission is physical, so values are in the hundreds |
 | `visibility.*` | Thresholds for the `visible` flag |
 | `path.*` | Waypoints, speed, start hold, lookahead, yaw-rate limit |
+| `marker.families.*.margin` | White border per side, as a fraction of `size_m`; WhyCode needs it |
 | `markers` | Placement along the path, or an explicit pose |
 
 A family supplies nine ids. An entry with `slot` reuses one, which is valid only while the two
@@ -163,6 +164,8 @@ can be told from a marker that was never in view.
 
 - Ground-truth ids are what the detector reports: `whycode_N.png` decodes to N, an AprilTag
   to its filename number.
+- WhyCode markers need their white margin. The ring runs edge to edge in the texture, and
+  without a border it merges with dark shelving at the detector's threshold.
 - `render.antialiasing` stays `DLAA` or `Off`. DLSS ghosts small moving markers while the
   frames still look fine.
 - Both containers need the same `ROS_DOMAIN_ID`.

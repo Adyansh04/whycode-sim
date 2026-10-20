@@ -12,6 +12,8 @@ from whycode_sim.geometry import marker_transform
 from whycode_sim.isaac import usd_utils
 
 MARKERS_ROOT = "/World/Markers"
+# How far the white backing plate sits behind the marker face; enough to avoid z-fighting.
+BACKING_OFFSET_M = 0.002
 
 
 def _quad_mesh(stage, path, size_m):
@@ -49,7 +51,8 @@ def _unlit_material(stage, path, texture_path, emissive_intensity):
     """OmniPBR configured to render the marker flat and lighting-independent.
 
     Mirrors the Gazebo models, which set albedo_map and emissive_map to the same texture
-    to fake an unlit surface so detection did not depend on the lights.
+    to fake an unlit surface so detection did not depend on the lights. Without a
+    texture it is plain white, for the backing plate.
 
     emissive_intensity is a calibration knob: RTX emission is in physical units, so a
     marker reads flat at values in the hundreds, not 1.0. Tune it in scene.yaml.
@@ -60,18 +63,25 @@ def _unlit_material(stage, path, texture_path, emissive_intensity):
     shader.SetSourceAsset(Sdf.AssetPath("OmniPBR.mdl"), "mdl")
     shader.SetSourceAssetSubIdentifier("OmniPBR", "mdl")
 
-    texture = Sdf.AssetPath(str(texture_path))
-    shader.CreateInput("diffuse_texture", Sdf.ValueTypeNames.Asset).Set(texture)
-    shader.CreateInput("diffuse_tint", Sdf.ValueTypeNames.Color3f).Set(
-        Gf.Vec3f(1.0, 1.0, 1.0)
-    )
+    white = Gf.Vec3f(1.0, 1.0, 1.0)
+    if texture_path is None:
+        shader.CreateInput("diffuse_color_constant", Sdf.ValueTypeNames.Color3f).Set(
+            white
+        )
+        shader.CreateInput("emissive_color", Sdf.ValueTypeNames.Color3f).Set(white)
+    else:
+        texture = Sdf.AssetPath(str(texture_path))
+        shader.CreateInput("diffuse_texture", Sdf.ValueTypeNames.Asset).Set(texture)
+        shader.CreateInput("diffuse_tint", Sdf.ValueTypeNames.Color3f).Set(white)
+        shader.CreateInput("emissive_color_texture", Sdf.ValueTypeNames.Asset).Set(
+            texture
+        )
     shader.CreateInput("reflection_roughness_constant", Sdf.ValueTypeNames.Float).Set(
         1.0
     )
     shader.CreateInput("metallic_constant", Sdf.ValueTypeNames.Float).Set(0.0)
     shader.CreateInput("specular_level", Sdf.ValueTypeNames.Float).Set(0.0)
     shader.CreateInput("enable_emission", Sdf.ValueTypeNames.Bool).Set(True)
-    shader.CreateInput("emissive_color_texture", Sdf.ValueTypeNames.Asset).Set(texture)
     shader.CreateInput("emissive_intensity", Sdf.ValueTypeNames.Float).Set(
         float(emissive_intensity)
     )
@@ -112,6 +122,10 @@ def build(stage, config, markers):
     Paths are keyed by position in the layout rather than by id, because a layout may
     place the same id twice. Naming by id let the second one overwrite the first prim,
     leaving a marker in the ground truth that was not in the scene.
+
+    A family with a `margin` gets a white plate just behind each face: the WhyCode ring
+    runs edge to edge in its texture, and with nothing around it the ring merges with a
+    dark background at the detector's threshold.
     """
     UsdGeom.Scope.Define(stage, MARKERS_ROOT)
     materials_root = f"{MARKERS_ROOT}/Materials"
@@ -119,6 +133,7 @@ def build(stage, config, markers):
 
     prim_paths = []
     materials = {}
+    white = None
 
     for index, marker in enumerate(markers):
         if not marker.texture_path.exists():
@@ -141,11 +156,29 @@ def build(stage, config, markers):
             )
         UsdShade.MaterialBindingAPI(mesh).Bind(materials[marker.texture])
 
+        plate_size = marker.size_m * (1.0 + 2.0 * marker.margin)
+        if marker.margin > 0.0:
+            if white is None:
+                white = _unlit_material(
+                    stage,
+                    f"{materials_root}/white",
+                    None,
+                    config.marker.emissive_intensity,
+                )
+            normal = (math.cos(marker.yaw_rad), math.sin(marker.yaw_rad), 0.0)
+            behind = [p - BACKING_OFFSET_M * n for p, n in zip(marker.position, normal)]
+            backing = _quad_mesh(stage, f"{marker_path}_backing", plate_size)
+            usd_utils.set_transform(
+                backing.GetPrim(),
+                Gf.Matrix4d(marker_transform(behind, marker.yaw_rad).T.tolist()),
+            )
+            UsdShade.MaterialBindingAPI(backing).Bind(white)
+
         _post(
             stage,
             f"{marker_path}_post",
             marker.position,
-            marker.size_m,
+            plate_size,
             config.marker.post,
         )
         prim_paths.append(marker_path)
