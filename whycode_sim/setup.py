@@ -22,10 +22,6 @@ setup(
         # Files only: glob("scripts/*") also matches subdirectories, which setuptools
         # cannot copy as data files.
         (f"share/{package_name}/scripts", [p for p in glob("scripts/*") if isfile(p)]),
-        (
-            f"share/{package_name}/scripts/decode_marker_ids",
-            [p for p in glob("scripts/decode_marker_ids/*") if isfile(p)],
-        ),
         (f"share/{package_name}/textures/whycode", glob("textures/whycode/*.png")),
         (f"share/{package_name}/textures/apriltag", glob("textures/apriltag/*.png")),
     ],

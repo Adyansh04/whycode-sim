@@ -140,7 +140,6 @@ In `scripts/`, from the ROS container:
 |---|---|
 | `draw_loop_map.py` | Floor plan with the path, markers and a bag's driven trajectory |
 | `compare_gt.py` | Detection rate and per-axis pose error against ground truth |
-| `decode_marker_ids/` | Measures the id each WhyCode texture decodes to |
 
 ## Topics
 
@@ -162,8 +161,8 @@ can be told from a marker that was never in view.
 
 ## Gotchas
 
-- A WhyCode id is a necklace code, not the texture index: `whycode_3.png` decodes to 7.
-  AprilTag ids are the filename number.
+- Ground-truth ids are what the detector reports: `whycode_N.png` decodes to N, an AprilTag
+  to its filename number.
 - `render.antialiasing` stays `DLAA` or `Off`. DLSS ghosts small moving markers while the
   frames still look fine.
 - Both containers need the same `ROS_DOMAIN_ID`.

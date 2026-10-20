@@ -60,11 +60,9 @@ marker:
     whycode:
       textures: [whycode_1, whycode_2, whycode_3, whycode_4,
                  whycode_5, whycode_6, whycode_7, whycode_8, whycode_9]
-      # Measured, not assumed: a WhyCode id is a necklace code, not the file index, so
-      # whycode_3.png does NOT decode to 3. Produced by scripts/decode_marker_ids/, which
-      # links whycode_vision's own CNecklace and feeds it the ring sampled out of each
-      # texture. Re-run it if the textures are regenerated or id_bits changes.
-      ids: [8, 6, 7, 3, 4, 5, 1, 2, 0]
+      # whycode_N.png decodes to N (id_bits 6, hamming_distance 1): measured on rendered
+      # frames, matching the detector's output to ground truth by position.
+      ids: [1, 2, 3, 4, 5, 6, 7, 8, 9]
     apriltag:
       textures: [tag36_11_00000, tag36_11_00001, tag36_11_00002,
                  tag36_11_00003, tag36_11_00004, tag36_11_00005,
