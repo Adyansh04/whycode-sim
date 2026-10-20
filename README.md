@@ -91,10 +91,16 @@ Run `./scripts/manage.sh clean` on the host first. It stops the sim and any play
 
 ```bash
 ros2 launch whycode_sim replay.launch.py bag:=/root/data/whycode_1lap
+ros2 launch whycode_sim replay.launch.py bag:=/root/data/whycode_1lap detector:=true
 ```
 
 Arguments: `bag`, `rate` (1.0), `loop` (true; each restart resets RViz), `rviz` (true),
-`marker_size_m` (0.2).
+`marker_size_m` (0.2), `detector` (false), `detector_config` (`whycode_vision`'s
+`whycon_config_isaac.yaml`).
+
+With `detector:=true`, `whycode_vision` runs on the replayed images. Its annotated image is the
+Detector output panel, and each detection is a `whycode_<id>` TF frame drawn over the camera
+view, which should sit on the plate of the same id.
 
 Plates are coloured by visibility: green visible, grey out of frame, red occluded, purple too
 oblique, yellow too few pixels. Labels read `id<N> <range>m <pixels>px <angle>deg`. In the
