@@ -183,6 +183,26 @@ def usd_camera_rotation(view_yaw_rad, pitch_rad=0.0, roll_rad=0.0):
     return np.column_stack([right, up, -forward])
 
 
+def frame_change(scene_world, map_world):
+    """Scene coordinates to the map's: each scene places the same warehouse by offset and yaw."""
+    scene_yaw, map_yaw = (
+        math.radians(scene_world.yaw_deg),
+        math.radians(map_world.yaw_deg),
+    )
+    (sx, sy), (mx, my) = scene_world.offset[:2], map_world.offset[:2]
+
+    def to_map(point):
+        dx, dy = point[0] - sx, point[1] - sy
+        wx = math.cos(scene_yaw) * dx + math.sin(scene_yaw) * dy
+        wy = -math.sin(scene_yaw) * dx + math.cos(scene_yaw) * dy
+        return (
+            math.cos(map_yaw) * wx - math.sin(map_yaw) * wy + mx,
+            math.sin(map_yaw) * wx + math.cos(map_yaw) * wy + my,
+        )
+
+    return to_map
+
+
 def world_to_camera(camera_position, camera_rotation, point_world):
     """Express a world point in the detector's camera frame.
 
@@ -448,6 +468,18 @@ def _check_camera_tilt():
     assert rolled[2, 0] < 0.0, "a positive roll must lower the right side"
 
 
+def _check_frame_change():
+    from types import SimpleNamespace
+
+    # scene_range.yaml turns the warehouse 90 deg: its origin is scene.yaml's (0, 11), +x south
+    to_map = frame_change(
+        SimpleNamespace(offset=[27.1, 8.0, 0.0], yaw_deg=90.0),
+        SimpleNamespace(offset=[8.0, -16.1, 0.0], yaw_deg=0.0),
+    )
+    assert np.allclose(to_map((0.0, 0.0)), (0.0, 11.0)), to_map((0.0, 0.0))
+    assert np.allclose(to_map((10.0, 0.0)), (0.0, 1.0)), to_map((10.0, 0.0))
+
+
 def _check_evaluate_marker():
     from types import SimpleNamespace
 
@@ -536,6 +568,7 @@ def main():
         _check_apparent_diameter,
         _check_quaternion,
         _check_camera_tilt,
+        _check_frame_change,
         _check_evaluate_marker,
         _check_pure_pursuit,
         _check_path_arclength,

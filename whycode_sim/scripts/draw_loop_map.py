@@ -3,10 +3,13 @@
 
 For reviewing a path change without the GUI: shelving is dark, the configured loop blue, the
 spawn green, side markers orange and end-of-lane markers red, each with its facing direction.
-With --bag, the trajectory actually driven is drawn over the plan in magenta.
+With --bag, the trajectory actually driven is drawn over the plan in magenta. A scene that
+places the warehouse elsewhere (scene_range.yaml, scene_angle.yaml) is drawn on a map saved with
+another through --map-scene.
 
     run_sim.py --verify-path --save-map /root/data/occupancy.npz       # in the isaac container
     python3 draw_loop_map.py /root/data/occupancy.npz --bag /root/data/whycode_1lap -o map.png
+    python3 draw_loop_map.py /root/data/occupancy.npz --scene .../scene_range.yaml -o range.png
 """
 
 import argparse
@@ -17,6 +20,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from whycode_sim import scene_config
+from whycode_sim.geometry import frame_change
 
 DEFAULT_SCENE = "/root/workspace/src/whycode_sim/whycode_sim/config/scene.yaml"
 PX_PER_M = 14
@@ -46,6 +50,9 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("occupancy")
     parser.add_argument("--scene", default=DEFAULT_SCENE)
+    parser.add_argument(
+        "--map-scene", default=DEFAULT_SCENE, help="the scene the map was saved in"
+    )
     parser.add_argument("--bag", help="overlay the trajectory driven in this bag")
     parser.add_argument("-o", "--output", default="loop_map.png")
     args = parser.parse_args(argv)
@@ -55,7 +62,9 @@ def main(argv=None):
     # Maps saved with the robot's height mark what actually blocks it; the rest is overhead.
     blocking = plan["blocking"] if "blocking" in plan else grid
     config = scene_config.load(args.scene)
-    loop = [tuple(p) for p in config.path.waypoints]
+    to_map = frame_change(config.world, scene_config.load(args.map_scene).world)
+    loop = [to_map(p) for p in config.path.waypoints]
+    closed = getattr(config.path, "loop", True)
     markers = scene_config.resolved_markers(config)
 
     # The whole building, so the loop can be judged against the shelving and the open floor.
@@ -85,16 +94,19 @@ def main(argv=None):
     for gy in range(math.ceil(y0), int(y1) + 1, 5):
         draw.line([px(x0, gy), px(x1, gy)], fill=(214, 218, 224))
 
-    draw.line([px(*p) for p in loop + loop[:1]], fill=(40, 110, 230), width=4)
+    draw.line([px(*p) for p in loop + loop[:1] * closed], fill=(40, 110, 230), width=4)
     if args.bag:
-        driven = read_trajectory(args.bag)
+        driven = [to_map(p) for p in read_trajectory(args.bag)]
         draw.line([px(*p) for p in driven], fill=(220, 40, 160), width=2)
 
     for index, marker in enumerate(markers):
         x, y = marker.position[0], marker.position[1]
         end_of_lane = getattr(config.markers[index], "position", None) is not None
         colour = (220, 50, 50) if end_of_lane else (240, 150, 30)
-        tip = (x + 1.2 * math.cos(marker.yaw_rad), y + 1.2 * math.sin(marker.yaw_rad))
+        tip = to_map(
+            (x + 1.2 * math.cos(marker.yaw_rad), y + 1.2 * math.sin(marker.yaw_rad))
+        )
+        x, y = to_map((x, y))
         draw.line([px(x, y), px(*tip)], fill=colour, width=2)
         cx, cy = px(x, y)
         draw.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=colour)
