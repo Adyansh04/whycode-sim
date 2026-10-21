@@ -108,8 +108,47 @@ def wire(config, scene, robot_joints=None):
 
     if robot_joints:
         _wire_twist_control(config, scene, robot_joints)
+    chase = getattr(getattr(config, "viewport", None), "chase", None)
+    if "chase_camera_path" in scene and getattr(chase, "publish", False):
+        _wire_chase_camera(scene, chase)
 
     return GRAPH_PATH
+
+
+def _wire_chase_camera(scene, chase):
+    """Publish the chase camera's view, for a demo recording, at the camera's rate."""
+    keys = og.Controller.Keys
+    og.Controller.edit(
+        GRAPH_PATH,
+        {
+            keys.CREATE_NODES: [
+                ("ChaseProduct", "isaacsim.core.nodes.IsaacCreateRenderProduct"),
+                ("PublishChase", "isaacsim.ros2.bridge.ROS2CameraHelper"),
+            ],
+            # Nodes from the first edit need their full path; this edit's own resolve by name
+            keys.CONNECT: [
+                (f"{GRAPH_PATH}/OnTick.outputs:tick", "ChaseProduct.inputs:execIn"),
+                (
+                    f"{GRAPH_PATH}/Context.outputs:context",
+                    "PublishChase.inputs:context",
+                ),
+                ("ChaseProduct.outputs:execOut", "PublishChase.inputs:execIn"),
+                (
+                    "ChaseProduct.outputs:renderProductPath",
+                    "PublishChase.inputs:renderProductPath",
+                ),
+            ],
+            keys.SET_VALUES: [
+                ("ChaseProduct.inputs:cameraPrim", [scene["chase_camera_path"]]),
+                ("ChaseProduct.inputs:width", int(chase.width)),
+                ("ChaseProduct.inputs:height", int(chase.height)),
+                ("PublishChase.inputs:type", "rgb"),
+                ("PublishChase.inputs:topicName", "/chase_camera/image_raw"),
+                ("PublishChase.inputs:frameId", "chase_camera"),
+                ("PublishChase.inputs:frameSkipCount", 0),
+            ],
+        },
+    )
 
 
 def _wire_twist_control(config, scene, robot_joints):

@@ -1,0 +1,202 @@
+# The demo's layout (scripts/demos/whycode.sh in whycode-bench): whycon_debug.rviz's displays
+# plus Isaac Sim's chase camera, for a maximized window on a screen 1600 px tall and 2560 or more
+# wide (RViz's full screen, F11, hides every panel). The annotated image fills the left, the 3D
+# view of detections and ground truth takes the rest of the width, and the three debug panels and
+# the chase camera run along the bottom, each 16:9.
+Panels: []
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 110; 110; 115
+      Enabled: true
+      Line Style:
+        Line Width: 0.029999999329447746
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 6
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 14
+      Reference Frame: <Fixed Frame>
+      Value: true
+
+    # The camera, at the origin: x forward, y left, z up
+    - Alpha: 1
+      Class: rviz_default_plugins/Axes
+      Enabled: true
+      Length: 0.4
+      Name: Camera
+      Radius: 0.03
+      Reference Frame: <Fixed Frame>
+      Value: true
+
+    # Detected markers: discs coloured by WhyCode ID, grey while the ID is unknown
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Detections
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /whycon/visualization_markers
+      Value: true
+
+    # Ground truth (whycode_sim's ground_truth_viz_node): green plates are markers the detector
+    # should see; other colours say why not (red occluded, amber too small, violet edge-on)
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Ground truth
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /marker_ground_truth_viz
+      Value: true
+
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Detector output
+      Normalize Range: true
+      Topic:
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /whycon/image_out
+      Value: true
+
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Candidates
+      Normalize Range: true
+      Topic:
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /whycon/debug_images/candidates
+      Value: true
+
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Binary
+      Normalize Range: true
+      Topic:
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /whycon/debug_images/binary
+      Value: true
+
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Marker tiles
+      Normalize Range: true
+      Topic:
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /whycon/debug_images/markers
+      Value: true
+
+    # Isaac Sim's chase camera, behind and above the robot (scene.yaml viewport.chase); in a bag
+    # recorded with viewport.chase.publish
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Isaac Sim
+      Normalize Range: true
+      Topic:
+        Depth: 1
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /chase_camera/image_raw
+      Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: camera_link
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 9
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.05999999865889549
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 3.5
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05000000074505806
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.009999999776482582
+      Pitch: 0.75
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 3.1415927410125732
+    Saved: ~
+Window Geometry:
+  Binary:
+    collapsed: false
+  Candidates:
+    collapsed: false
+  Detector output:
+    collapsed: false
+  Height: 1600
+  Hide Left Dock: false
+  Hide Right Dock: false
+  Isaac Sim:
+    collapsed: false
+  Marker tiles:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd00000002000000000000073a000004bafc0200000001fb0000001e004400650074006500630074006f00720020006f007500740070007500740100000000000004ba0000001700ffffff0000000300000a0000000180fc0100000004fb0000000c00420069006e00610072007901000000000000027c0000003e00fffffffb0000001400430061006e006400690064006100740065007301000002820000027b0000003e00fffffffb00000018004d00610072006b00650072002000740069006c0065007301000005030000027c0000003e00fffffffb0000001200490073006100610063002000530069006d01000007850000027b0000003e00ffffff000002c0000004ba00000004000000040000000800000008fc00000000
+  Width: 2560
+  X: 0
+  Y: 0
