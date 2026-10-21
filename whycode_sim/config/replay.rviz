@@ -42,13 +42,33 @@ Visualization Manager:
 
     - Class: rviz_default_plugins/TF
       Enabled: true
-      Filter (blacklist): ""
+      Filter (blacklist): whycode_.*
       Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: true
       Marker Scale: 0.75
       Name: TF
+      Show Arrows: false
+      Show Axes: true
+      Show Names: true
+      Tree:
+        {}
+      Update Interval: 0
+      Value: true
+
+    # Detections from whycode_vision (detector:=true), one whycode_<id> frame each, which
+    # should sit on the ground-truth plate of the same id. The short timeout drops a frame
+    # soon after its marker is lost; it is a child of camera_link and would ride along.
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): whycode_.*
+      Frame Timeout: 1
+      Frames:
+        All Enabled: true
+      Marker Scale: 0.5
+      Name: Detections (TF)
       Show Arrows: false
       Show Axes: true
       Show Names: true
@@ -71,6 +91,23 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /camera/image_raw
+      Value: true
+
+    # The detector's own view (detector:=true): each accepted marker with its track id,
+    # WhyCode id and pose drawn on the frame.
+    - Class: rviz_default_plugins/Image
+      Enabled: true
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Detector output
+      Normalize Range: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /whycon/image_out
       Value: true
 
     # Ground truth in the camera frame. Green plates should sit on the printed markers in
@@ -120,6 +157,7 @@ Visualization Manager:
         Value: /camera/image_raw
       Value: true
       Visibility:
+        "Detections (TF)": true
         Grid: false
         "Ground truth (camera)": true
         "Layout and trail (world)": false
@@ -213,6 +251,8 @@ Window Geometry:
   Camera:
     collapsed: false
   Camera image:
+    collapsed: false
+  Detector output:
     collapsed: false
   Displays:
     collapsed: false

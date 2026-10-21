@@ -91,10 +91,16 @@ Run `./scripts/manage.sh clean` on the host first. It stops the sim and any play
 
 ```bash
 ros2 launch whycode_sim replay.launch.py bag:=/root/data/whycode_1lap
+ros2 launch whycode_sim replay.launch.py bag:=/root/data/whycode_1lap detector:=true
 ```
 
 Arguments: `bag`, `rate` (1.0), `loop` (true; each restart resets RViz), `rviz` (true),
-`marker_size_m` (0.2).
+`marker_size_m` (0.2), `detector` (false), `detector_config` (`whycode_vision`'s
+`whycon_config_isaac.yaml`).
+
+With `detector:=true`, `whycode_vision` runs on the replayed images. Its annotated image is the
+Detector output panel, and each detection is a `whycode_<id>` TF frame drawn over the camera
+view, which should sit on the plate of the same id.
 
 Plates are coloured by visibility: green visible, grey out of frame, red occluded, purple too
 oblique, yellow too few pixels. Labels read `id<N> <range>m <pixels>px <angle>deg`. In the
@@ -114,6 +120,7 @@ so placement is computed once.
 | `marker.emissive_intensity` | Brightness; RTX emission is physical, so values are in the hundreds |
 | `visibility.*` | Thresholds for the `visible` flag |
 | `path.*` | Waypoints, speed, start hold, lookahead, yaw-rate limit |
+| `marker.families.*.margin` | White border per side, as a fraction of `size_m`; WhyCode needs it |
 | `markers` | Placement along the path, or an explicit pose |
 
 A family supplies nine ids. An entry with `slot` reuses one, which is valid only while the two
@@ -140,7 +147,6 @@ In `scripts/`, from the ROS container:
 |---|---|
 | `draw_loop_map.py` | Floor plan with the path, markers and a bag's driven trajectory |
 | `compare_gt.py` | Detection rate and per-axis pose error against ground truth |
-| `decode_marker_ids/` | Measures the id each WhyCode texture decodes to |
 
 ## Topics
 
@@ -162,8 +168,10 @@ can be told from a marker that was never in view.
 
 ## Gotchas
 
-- A WhyCode id is a necklace code, not the texture index: `whycode_3.png` decodes to 7.
-  AprilTag ids are the filename number.
+- Ground-truth ids are what the detector reports: `whycode_N.png` decodes to N, an AprilTag
+  to its filename number.
+- WhyCode markers need their white margin. The ring runs edge to edge in the texture, and
+  without a border it merges with dark shelving at the detector's threshold.
 - `render.antialiasing` stays `DLAA` or `Off`. DLSS ghosts small moving markers while the
   frames still look fine.
 - Both containers need the same `ROS_DOMAIN_ID`.

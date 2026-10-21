@@ -145,7 +145,7 @@ def resolved_markers(config):
 
     Placement comes from the path unless the entry gives an explicit `position` (and
     optionally `yaw_deg`). Returns entries of id, texture, texture_path, family,
-    position, yaw_rad, size_m.
+    position, yaw_rad, size_m, margin.
     """
     waypoints = [list(point) for point in config.path.waypoints]
     loop = getattr(config.path, "loop", True)
@@ -153,6 +153,10 @@ def resolved_markers(config):
     default_facing = getattr(config.marker, "facing_angle_deg", 45.0)
 
     table = family_table(config)
+    # White border around the texture, as a fraction of size_m on each side.
+    margin = getattr(
+        getattr(config.marker.families, config.marker.family), "margin", 0.0
+    )
     # Reusing an id needs an explicit `slot`; without one an entry takes the table row at
     # its own index, so more entries than rows is an overflow rather than a choice. Two
     # markers sharing an id must never be in frame together, which `run_sim.py
@@ -203,6 +207,7 @@ def resolved_markers(config):
                 position=list(position),
                 yaw_rad=yaw_rad,
                 size_m=getattr(marker, "size_m", config.marker.size_m),
+                margin=margin,
             )
         )
     return resolved

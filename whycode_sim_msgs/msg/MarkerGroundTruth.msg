@@ -6,7 +6,7 @@
 # in whycon_localization.cpp:610-613 before publishing, so these two topics can be
 # differenced field by field with no transform.
 
-int32 marker_id                 # decoded ID (necklace code / AprilTag id), NOT the file index
+int32 marker_id                 # id the detector reports: whycode_N.png -> N, AprilTag file number
 string family                   # "whycode" or "apriltag"
 string texture                  # texture basename applied, e.g. "whycode_3"
 
