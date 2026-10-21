@@ -1,8 +1,8 @@
 # whycode_sim
 
-Isaac Sim warehouse scene for benchmarking WhyCode and AprilTag detection. A Nova Carter drives a
-fixed loop between the racks past fiducial markers, and the camera stream, odometry and exact
-ground-truth marker poses are recorded to a bag that detector variants are replayed against.
+Isaac Sim warehouse scene for benchmarking WhyCode, WhyCon and AprilTag detection. A Nova Carter
+drives a fixed loop between the racks past fiducial markers, and the camera stream, odometry and
+exact ground-truth marker poses are recorded to a bag that detector variants are replayed against.
 
 | WhyCode | AprilTag |
 |---|---|
@@ -10,8 +10,8 @@ ground-truth marker poses are recorded to a bag that detector variants are repla
 
 - `/marker_ground_truth` gives each marker's pose in the detector's own camera frame, so scoring
   is a subtraction.
-- `marker.family: whycode | apriltag` swaps the printed pattern and nothing else: path, poses,
-  speeds and lighting stay identical.
+- `marker.family: whycode | whycon | apriltag` swaps the printed pattern and nothing else: path,
+  poses, speeds and lighting stay identical.
 
 ## Quick start
 
@@ -86,8 +86,9 @@ Recorded with Isaac Sim 6.2.0.1 at 1280x720 and 30 Hz:
 | `whycon_1lap`, `apriltag_1lap` (tag 0.20 m) | A | 1 | 0.8 m/s |
 | `demo_1lap`, with Isaac Sim's chase camera (`scene_demo.yaml`) | A | 1 | 0.8 m/s |
 
-The AprilTag bags before `apriltag_1lap`'s re-recording drew the whole 0.2 m texture, a 0.16 m tag
-(`apriltag_1lap_tag016`). The comparison bags come from the bench's `scripts/benchmark.sh record`:
+The older AprilTag bags (paths B and C, three laps, and `apriltag_1lap_tag016`) drew the whole
+0.2 m texture, so their tags are 0.16 m. The comparison bags come from the bench's
+`scripts/benchmark.sh record`:
 
 | Scene | What | Bags |
 |---|---|---|
