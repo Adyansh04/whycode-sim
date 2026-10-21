@@ -1,0 +1,35 @@
+# Viewing angle: one marker, and the robot circling it counter-clockwise at 2, 4 and 6 m with a
+# left-facing camera that keeps it on the optical axis. Each circle sweeps the incidence from
+# edge-on through head-on and back; the spiral to the next radius runs behind the marker. In
+# the open hall south of the racks.
+extends: scene.yaml
+
+world:
+  # Puts the origin, where the robot starts heading east, at (-2.5, -26) in scene.yaml's
+  # frame, 2 m south of the circles' centre
+  offset: [10.5, 9.9, 0.0]
+  yaw_deg: 0.0
+
+camera:
+  # A RealSense D435's colour camera at 1280x720 (fx 909.4 px)
+  width: 1280
+  height: 720
+  hfov_deg: 70.26
+  mount:
+    position: [0.0, 0.40, 0.62]
+    rpy_deg: [0.0, 0.0, 90.0]
+
+path:
+  loop: false
+  speed_mps: 0.8
+  circles:
+    centre: [0.0, 2.0]
+    radii: [2.0, 4.0, 6.0]
+    start_deg: -90.0
+  waypoints:            # replaced by the circles
+    - [0.0, 0.0]
+    - [1.0, 0.0]
+
+markers:
+  # Facing north: the robot starts behind it, at 180 deg incidence
+  - {position: [0.0, 2.0], yaw_deg: 90.0}

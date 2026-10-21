@@ -30,20 +30,31 @@ def _namespace(value):
 def load(path):
     """Load and validate a scene config."""
     path = Path(path)
-    config = _namespace(_read(path))
+    raw, base = _read(path)
+    config = _namespace(raw)
+    if hasattr(config.path, "circles"):
+        config.path.waypoints = circle_waypoints(config.path.circles)
     config.path_on_disk = path
-    config.package_root = path.parent.parent
+    # Textures sit beside the scene the chain starts from, so a variant extending a packaged
+    # scene can live anywhere, such as the benchmark's generated scenes under /root/data
+    config.package_root = base.parent.parent
     _validate(config)
     return config
 
 
 def _read(path):
-    """Parsed YAML, with `extends: <file>` resolved: a scene that differs only in its path
-    and markers names its base rather than copying the camera, render and marker setup."""
+    """Parsed YAML, with `extends: <file>` resolved, and the file the chain starts from.
+
+    A scene that differs only in its path and markers names its base rather than copying the
+    camera, render and marker setup. A relative base is relative to the extending file.
+    """
     with path.open() as handle:
         raw = yaml.safe_load(handle)
     base = raw.pop("extends", None)
-    return raw if base is None else _merge(_read(path.parent / base), raw)
+    if base is None:
+        return raw, path
+    merged, root = _read(path.parent / base)
+    return _merge(merged, raw), root
 
 
 def _merge(base, override):
@@ -55,6 +66,33 @@ def _merge(base, override):
         else:
             merged[key] = value
     return merged
+
+
+def circle_waypoints(circles):
+    """Concentric circles, counter-clockwise, as one path without crossing or touching itself.
+
+    Each circle runs `arc_deg` from `start_deg` and spirals out to the next radius over the
+    rest of the turn. Closest-point tracking would confuse a full circle's end with its
+    start, which share a point.
+    """
+    centre = circles.centre
+    arc = getattr(circles, "arc_deg", 330.0)
+    step = getattr(circles, "step_deg", 10.0)
+    points = []
+    for index, radius in enumerate(circles.radii):
+        last = index == len(circles.radii) - 1
+        outer = radius if last else circles.radii[index + 1]
+        turn = arc if last else 360.0
+        for k in range(int(round(turn / step)) + (1 if last else 0)):
+            angle = k * step
+            # The spiral out to the next radius takes the turn's last (360 - arc) degrees
+            blend = max(0.0, angle - arc) / (360.0 - arc)
+            r = radius + blend * (outer - radius)
+            theta = math.radians(circles.start_deg + angle)
+            points.append(
+                [centre[0] + r * math.cos(theta), centre[1] + r * math.sin(theta)]
+            )
+    return points
 
 
 def _validate(config):
