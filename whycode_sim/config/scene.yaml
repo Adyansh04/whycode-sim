@@ -50,7 +50,7 @@ robot:
   wheel_distance_m: 0.6201
 
 marker:
-  family: whycode       # whycode | apriltag -- swaps every marker at once
+  family: whycode       # whycode | whycon | apriltag -- swaps every marker at once
 
   # Marker geometry is family-independent: a slot says where a marker stands and which
   # way it faces, this table says what is printed on it and what a detector decodes.
@@ -66,12 +66,22 @@ marker:
       # White border on each side, as a fraction of size_m. The ring runs edge to edge in
       # the texture and, with nothing around it, merges with dark shelving behind it.
       margin: 0.1
+    whycon:
+      # The plain WhyCon ring from whycode_vision's generator (`whycon-id-gen -l -t`, then
+      # scripts/rasterize_marker.py). It carries no code: the ids only label the slots.
+      textures: [whycon, whycon, whycon, whycon, whycon, whycon, whycon, whycon, whycon]
+      ids: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+      margin: 0.1
     apriltag:
       textures: [tag36_11_00000, tag36_11_00001, tag36_11_00002,
                  tag36_11_00003, tag36_11_00004, tag36_11_00005,
                  tag36_11_00006, tag36_11_00007, tag36_11_00008]
-      # AprilTag ids are the number in the filename; the textures carry their own border.
+      # AprilTag ids are the number in the filename; the textures carry their own border,
+      # and the black square spans 0.8 of them.
       ids: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+      black_fraction: 0.8
+  # The outer black edge in every family: a WhyCode or WhyCon ring's diameter, an AprilTag's
+  # black square (its tag size), so the families compare at the same printed size.
   size_m: 0.2           # coupled to whycon_config_sim.yaml detector.outer_diameter (0.20).
                         # Changing this requires the matching change in whycode_vision.
   # Level with camera.mount.position z, so incidence is purely horizontal. Raising

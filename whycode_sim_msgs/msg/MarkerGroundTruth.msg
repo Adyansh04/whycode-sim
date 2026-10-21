@@ -6,8 +6,9 @@
 # in whycon_localization.cpp:610-613 before publishing, so these two topics can be
 # differenced field by field with no transform.
 
-int32 marker_id                 # id the detector reports: whycode_N.png -> N, AprilTag file number
-string family                   # "whycode" or "apriltag"
+int32 marker_id                 # id the detector reports: whycode_N.png -> N, AprilTag file number;
+                                # a WhyCon marker has none, and this only labels its slot
+string family                   # "whycode", "whycon" or "apriltag"
 string texture                  # texture basename applied, e.g. "whycode_3"
 
 geometry_msgs/Pose pose         # marker in the camera frame; diff against WhyCodePose.pose

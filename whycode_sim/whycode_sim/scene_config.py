@@ -15,7 +15,7 @@ import yaml
 
 from whycode_sim.geometry import marker_normal_yaw, path_segment, place_marker
 
-MARKER_FAMILIES = ("whycode", "apriltag")
+MARKER_FAMILIES = ("whycode", "whycon", "apriltag")
 
 
 def _namespace(value):
@@ -145,7 +145,7 @@ def resolved_markers(config):
 
     Placement comes from the path unless the entry gives an explicit `position` (and
     optionally `yaw_deg`). Returns entries of id, texture, texture_path, family,
-    position, yaw_rad, size_m, margin.
+    position, yaw_rad, size_m (the textured face's edge), margin.
     """
     waypoints = [list(point) for point in config.path.waypoints]
     loop = getattr(config.path, "loop", True)
@@ -153,10 +153,12 @@ def resolved_markers(config):
     default_facing = getattr(config.marker, "facing_angle_deg", 45.0)
 
     table = family_table(config)
+    family = getattr(config.marker.families, config.marker.family)
     # White border around the texture, as a fraction of size_m on each side.
-    margin = getattr(
-        getattr(config.marker.families, config.marker.family), "margin", 0.0
-    )
+    margin = getattr(family, "margin", 0.0)
+    # size_m is the marker's outer black edge in every family; a texture that carries its
+    # own white border (AprilTag's spans 0.8 of it) is drawn that much larger
+    black_fraction = getattr(family, "black_fraction", 1.0)
     # Reusing an id needs an explicit `slot`; without one an entry takes the table row at
     # its own index, so more entries than rows is an overflow rather than a choice. Two
     # markers sharing an id must never be in frame together, which `run_sim.py
@@ -206,7 +208,7 @@ def resolved_markers(config):
                 family=config.marker.family,
                 position=list(position),
                 yaw_rad=yaw_rad,
-                size_m=getattr(marker, "size_m", config.marker.size_m),
+                size_m=getattr(marker, "size_m", config.marker.size_m) / black_fraction,
                 margin=margin,
             )
         )

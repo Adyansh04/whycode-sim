@@ -23,6 +23,7 @@ setup(
         # cannot copy as data files.
         (f"share/{package_name}/scripts", [p for p in glob("scripts/*") if isfile(p)]),
         (f"share/{package_name}/textures/whycode", glob("textures/whycode/*.png")),
+        (f"share/{package_name}/textures/whycon", glob("textures/whycon/*.png")),
         (f"share/{package_name}/textures/apriltag", glob("textures/apriltag/*.png")),
     ],
     install_requires=["setuptools"],
