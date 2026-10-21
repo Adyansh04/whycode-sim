@@ -4,9 +4,13 @@ Isaac Sim warehouse scene for benchmarking WhyCode, WhyCon and AprilTag detectio
 drives a fixed loop between the racks past fiducial markers, and the camera stream, odometry and
 exact ground-truth marker poses are recorded to a bag that detector variants are replayed against.
 
-| WhyCode | AprilTag |
-|---|---|
-| ![WhyCode markers in the warehouse aisle](docs/whycode_aisle.png) | ![AprilTag markers in the same aisle](docs/apriltag_aisle.png) |
+![Isaac Sim's chase camera behind the robot in a warehouse aisle](docs/isaac_chase.jpg)
+
+The robot's camera at the same point of path A, with each marker family:
+
+| WhyCode | WhyCon | AprilTag |
+|---|---|---|
+| ![WhyCode markers in the warehouse aisle](docs/aisle_whycode.jpg) | ![WhyCon markers in the same aisle](docs/aisle_whycon.jpg) | ![AprilTags in the same aisle](docs/aisle_apriltag.jpg) |
 
 - `/marker_ground_truth` gives each marker's pose in the detector's own camera frame, so scoring
   is a subtraction.
@@ -75,6 +79,12 @@ and markers.
 | `scene_B.yaml` | A plus a sweep west along the rack fronts | 72.4 m | 17 |
 | `scene_C.yaml` | A plus sweeps west and east along the rack fronts | 94.0 m | 22 |
 
+![Floor plans of paths A, B and C and the range and angle scenes](docs/floor_plans.png)
+
+Floor plans from `draw_loop_map.py`, north up: shelving dark, the planned path blue, the path a bag
+actually drove magenta, and the markers orange (red where they stand at a lane's end) with the way
+they face.
+
 Recorded with Isaac Sim 6.2.0.1 at 1280x720 and 30 Hz:
 
 | Bag | Path | Laps | Speed |
@@ -94,6 +104,8 @@ The older AprilTag bags (paths B and C, three laps, and `apriltag_1lap_tag016`) 
 |---|---|---|
 | `scene_range.yaml` | A 0.20 and a 0.146 m marker on the camera's axis; the robot drives 41.5 m straight away with a rear camera, from the end of the x = 0 aisle into the open hall | `range_<family>_<640,1280,1920>`, a RealSense D435's colour FOV |
 | `scene_angle.yaml` | One 0.20 m marker; the robot circles it at 2, 4 and 6 m with a side camera, so the incidence sweeps from edge-on to head-on | `angle_<family>`, 1280x720 |
+
+![The range scene's rear camera with the markers 2, 8 and 20 m away](docs/range_views.jpg)
 
 ## Replay
 
@@ -166,7 +178,7 @@ In `scripts/`, from the ROS container:
 
 | Script | Does |
 |---|---|
-| `draw_loop_map.py` | Floor plan with the path, markers and a bag's driven trajectory |
+| `draw_loop_map.py` | Floor plan with the path, markers and a bag's driven trajectory; `--map-scene` draws a scene on a map saved with another |
 | `compare_gt.py` | Detection rate and per-axis pose error against ground truth |
 | `rasterize_marker.py` | A `whycon-id-gen` SVG to a texture PNG; made `textures/whycon/whycon.png` (`whycon-id-gen -l -t`) |
 | `replay_detector.py` | One detector (WhyCode, WhyCon, apriltag_ros, ArUco, Isaac ROS) on a bag: its output and CPU per frame |
