@@ -138,7 +138,7 @@ def main(argv=None):
     # silent exit 0. Report before teardown.
     status = 0
     try:
-        _run(simulation_app, args, config)
+        _run(simulation_app, args, config, headless)
     except Exception:
         import traceback
 
@@ -151,7 +151,7 @@ def main(argv=None):
     return status
 
 
-def _run(simulation_app, args, config):
+def _run(simulation_app, args, config, headless):
     import omni.usd
     from isaacsim.core.utils.extensions import enable_extension
 
@@ -253,8 +253,19 @@ def _run(simulation_app, args, config):
         )
         return
 
+    # The chase camera: the GUI's viewport follows the robot through it, and it can be
+    # published for a demo recording
+    chase = getattr(getattr(config, "viewport", None), "chase", None)
+    if chase is not None and (not headless or getattr(chase, "publish", False)):
+        scene["chase_camera_path"] = robot.attach_chase_camera(
+            stage, scene["chassis_path"], chase
+        )
     joints = _resolve_drive_joints(stage, scene)
     ros_graph.wire(config, scene, joints)
+    if not headless and "chase_camera_path" in scene:
+        from omni.kit.viewport.utility import get_active_viewport
+
+        get_active_viewport().camera_path = scene["chase_camera_path"]
     simulation_app.update()
 
     import rclpy

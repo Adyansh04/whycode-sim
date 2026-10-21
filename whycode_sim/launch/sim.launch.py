@@ -33,6 +33,8 @@ RECORDED_TOPICS = [
     "/marker_ground_truth",
     "/tf",
     "/tf_static",
+    # Only when the scene publishes it (viewport.chase.publish), for a demo
+    "/chase_camera/image_raw",
 ]
 
 

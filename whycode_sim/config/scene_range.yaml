@@ -1,0 +1,32 @@
+# Detection range: two markers on the camera's axis, and the robot driving 40 m straight away
+# from them, from the end of the x = 0 aisle into the open hall south of the racks. A
+# rear-facing camera keeps them in view while the follower drives forward. The benchmark sets
+# the family and the camera (resolution and field of view) per recording.
+extends: scene.yaml
+
+world:
+  # The aisle's north end (0, 11) in scene.yaml's frame becomes the origin, with the drive
+  # south along +x: rotate the warehouse 90 deg, then shift it.
+  offset: [27.1, 8.0, 0.0]
+  yaw_deg: 90.0
+
+camera:
+  # A RealSense D435's colour camera at 1280x720 (fx 909.4 px)
+  width: 1280
+  height: 720
+  hfov_deg: 70.26
+  mount:
+    position: [-0.40, 0.0, 0.62]
+    rpy_deg: [0.0, 0.0, 180.0]
+
+path:
+  loop: false
+  speed_mps: 1.0
+  waypoints:
+    - [0.0, 0.0]
+    - [41.5, 0.0]
+
+markers:
+  # Side by side 1.15 m behind the camera, facing it, both at the camera's height
+  - {position: [-1.55, 0.25], yaw_deg: 0.0, size_m: 0.20}
+  - {position: [-1.55, -0.25], yaw_deg: 0.0, size_m: 0.146}

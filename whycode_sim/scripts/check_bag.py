@@ -4,8 +4,8 @@
 Every failure this catches produced a bag that looked well formed: the right topics, rate and
 size. Checks that frames carry pixels, that header stamps are evenly spaced, that log times are
 sim time (so playback runs at the recorded rate rather than re-enacting a slow session), that
-every frame has ground truth, that the robot drove whole laps from the spawn, and that no two
-visible markers share an id.
+every frame has ground truth, that the robot drove whole laps from the spawn (an open path to
+its end), and that no two visible markers share an id.
 
     python3 check_bag.py /root/data/whycode_1lap [--laps 1]
 """
@@ -59,7 +59,9 @@ def main(argv=None):
 
     config = scene_config.load(args.scene)
     waypoints = [list(p) for p in config.path.waypoints]
+    loop = getattr(config.path, "loop", True)
     _, loop_length = resample_path(waypoints, True)
+    _, path_length = resample_path(waypoints, loop)
 
     reader = rosbag2_py.SequentialReader()
     reader.open(
@@ -153,6 +155,9 @@ def main(argv=None):
         failures.append("the camera barely moved: the robot is stuck")
     if args.laps is not None and abs(laps - args.laps) > 0.05:
         failures.append(f"drove {laps:.3f} laps, expected {args.laps}")
+    # An open path ends where the follower stops, within its goal tolerance
+    if not loop and travelled < path_length - 1.0:
+        failures.append(f"drove {travelled:.2f} m of the {path_length:.2f} m path")
     if clashes:
         failures.append("a frame shows two visible markers with one id")
     if len(inside):

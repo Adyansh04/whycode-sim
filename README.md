@@ -1,17 +1,21 @@
 # whycode_sim
 
-Isaac Sim warehouse scene for benchmarking WhyCode and AprilTag detection. A Nova Carter drives a
-fixed loop between the racks past fiducial markers, and the camera stream, odometry and exact
-ground-truth marker poses are recorded to a bag that detector variants are replayed against.
+Isaac Sim warehouse scene for benchmarking WhyCode, WhyCon and AprilTag detection. A Nova Carter
+drives a fixed loop between the racks past fiducial markers, and the camera stream, odometry and
+exact ground-truth marker poses are recorded to a bag that detector variants are replayed against.
 
-| WhyCode | AprilTag |
-|---|---|
-| ![WhyCode markers in the warehouse aisle](docs/whycode_aisle.png) | ![AprilTag markers in the same aisle](docs/apriltag_aisle.png) |
+![Isaac Sim's chase camera behind the robot in a warehouse aisle](docs/isaac_chase.jpg)
+
+The robot's camera at the same point of path A, with each marker family:
+
+| WhyCode | WhyCon | AprilTag |
+|---|---|---|
+| ![WhyCode markers in the warehouse aisle](docs/aisle_whycode.jpg) | ![WhyCon markers in the same aisle](docs/aisle_whycon.jpg) | ![AprilTags in the same aisle](docs/aisle_apriltag.jpg) |
 
 - `/marker_ground_truth` gives each marker's pose in the detector's own camera frame, so scoring
   is a subtraction.
-- `marker.family: whycode | apriltag` swaps the printed pattern and nothing else: path, poses,
-  speeds and lighting stay identical.
+- `marker.family: whycode | whycon | apriltag` swaps the printed pattern and nothing else: path,
+  poses, speeds and lighting stay identical.
 
 ## Quick start
 
@@ -75,6 +79,12 @@ and markers.
 | `scene_B.yaml` | A plus a sweep west along the rack fronts | 72.4 m | 17 |
 | `scene_C.yaml` | A plus sweeps west and east along the rack fronts | 94.0 m | 22 |
 
+![Floor plans of paths A, B and C and the range and angle scenes](docs/floor_plans.png)
+
+Floor plans from `draw_loop_map.py`, north up: shelving dark, the planned path blue, the path a bag
+actually drove magenta, and the markers orange (red where they stand at a lane's end) with the way
+they face.
+
 Recorded with Isaac Sim 6.2.0.1 at 1280x720 and 30 Hz:
 
 | Bag | Path | Laps | Speed |
@@ -83,6 +93,19 @@ Recorded with Isaac Sim 6.2.0.1 at 1280x720 and 30 Hz:
 | `whycode_3lap_speeds`, `apriltag_3lap_speeds` | A | 3 | 0.5, 0.8, 1.2 m/s |
 | `whycode_B_1lap`, `apriltag_B_1lap` | B | 1 | 0.8 m/s |
 | `whycode_C_1lap`, `apriltag_C_1lap` | C | 1 | 0.8 m/s |
+| `whycon_1lap`, `apriltag_1lap` (tag 0.20 m) | A | 1 | 0.8 m/s |
+| `demo_1lap`, with Isaac Sim's chase camera (`scene_demo.yaml`) | A | 1 | 0.8 m/s |
+
+The older AprilTag bags (paths B and C, three laps, and `apriltag_1lap_tag016`) drew the whole
+0.2 m texture, so their tags are 0.16 m. The comparison bags come from the bench's
+`scripts/benchmark.sh record`:
+
+| Scene | What | Bags |
+|---|---|---|
+| `scene_range.yaml` | A 0.20 and a 0.146 m marker on the camera's axis; the robot drives 41.5 m straight away with a rear camera, from the end of the x = 0 aisle into the open hall | `range_<family>_<640,1280,1920>`, a RealSense D435's colour FOV |
+| `scene_angle.yaml` | One 0.20 m marker; the robot circles it at 2, 4 and 6 m with a side camera, so the incidence sweeps from edge-on to head-on | `angle_<family>`, 1280x720 |
+
+![The range scene's rear camera with the markers 2, 8 and 20 m away](docs/range_views.jpg)
 
 ## Replay
 
@@ -106,6 +129,11 @@ Plates are coloured by visibility: green visible, grey out of frame, red occlude
 oblique, yellow too few pixels. Labels read `id<N> <range>m <pixels>px <angle>deg`. In the
 Camera display, green plates sit on the printed markers.
 
+`config/demo.rviz` is the bench demo's layout (`scripts/demos/whycode.sh` in whycode-bench): the
+detector's annotated image and debug panels, its detections over the ground truth, and the
+chase camera of a bag recorded with `scene_demo.yaml`, for a maximized window on a screen 1600 px
+tall.
+
 ## Configuration
 
 `config/scene.yaml` drives the scene builder, the ground-truth node and the waypoint follower,
@@ -114,14 +142,19 @@ so placement is computed once.
 | Key | Controls |
 |---|---|
 | `camera.*` | Resolution, rate, field of view, mount, body and optical frame ids |
-| `marker.family` | `whycode` or `apriltag` |
-| `marker.size_m` | Edge length; must match `detector.outer_diameter` in `whycode_vision` |
+| `marker.family` | `whycode`, `whycon` or `apriltag` |
+| `marker.size_m` | Outer black edge: a ring's diameter, an AprilTag's black square; matches `detector.outer_diameter` in `whycode_vision` |
 | `marker.facing_angle_deg` | Incidence a robot sees on approach |
 | `marker.emissive_intensity` | Brightness; RTX emission is physical, so values are in the hundreds |
 | `visibility.*` | Thresholds for the `visible` flag |
 | `path.*` | Waypoints, speed, start hold, lookahead, yaw-rate limit |
 | `marker.families.*.margin` | White border per side, as a fraction of `size_m`; WhyCode needs it |
-| `markers` | Placement along the path, or an explicit pose |
+| `marker.families.*.black_fraction` | Share of the texture the black edge spans (AprilTag 0.8), so the texture is drawn larger |
+| `markers` | Placement along the path, or an explicit pose, and an optional `size_m` |
+| `path.circles` | Concentric circles (`centre`, `radii`, `start_deg`) instead of `waypoints` |
+| `viewport.chase` | With the GUI, the viewport follows the robot from this pose in the chassis frame; `publish` also renders it to `/chase_camera/image_raw` |
+
+A scene may `extends:` another, even from outside the package (textures resolve from the base).
 
 A family supplies nine ids. An entry with `slot` reuses one, which is valid only while the two
 markers are never in frame together: `run_sim.py --verify-path` checks it and must report zero.
@@ -145,8 +178,16 @@ In `scripts/`, from the ROS container:
 
 | Script | Does |
 |---|---|
-| `draw_loop_map.py` | Floor plan with the path, markers and a bag's driven trajectory |
+| `draw_loop_map.py` | Floor plan with the path, markers and a bag's driven trajectory; `--map-scene` draws a scene on a map saved with another |
 | `compare_gt.py` | Detection rate and per-axis pose error against ground truth |
+| `rasterize_marker.py` | A `whycon-id-gen` SVG to a texture PNG; made `textures/whycon/whycon.png` (`whycon-id-gen -l -t`) |
+| `replay_detector.py` | One detector (WhyCode, WhyCon, apriltag_ros, ArUco, Isaac ROS) on a bag: its output and CPU per frame |
+| `evaluate.py` | That replay against ground truth: detection, IDs and errors by range, incidence and size |
+| `benchmark_report.py` | Plots and tables from every replay's score |
+
+`whycode_baselines` holds `aruco_node`, OpenCV's ArUco detector on the AprilTag 36h11 tags, which
+publishes each tag's pose on `/tf` as `aruco:<id>`. `launch/isaac_ros_apriltag.launch.py` runs
+NVIDIA's GPU detector in the bench's `isaac-ros` container.
 
 ## Topics
 

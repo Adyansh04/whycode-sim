@@ -133,6 +133,23 @@ def attach_camera(stage, chassis_path, config):
     return body_path, camera_path
 
 
+def attach_chase_camera(stage, chassis_path, chase):
+    """A camera riding behind and above the robot, for the GUI's viewport to follow it.
+
+    `chase` gives its position and rpy_deg in the chassis frame (X forward, Y left, Z up) and
+    its focal length. Not part of the benchmark: it is published only for a demo recording
+    (`publish`).
+    """
+    path = f"{chassis_path}/chase_camera"
+    prim = UsdGeom.Camera.Define(stage, path)
+    prim.CreateFocalLengthAttr(float(chase.focal_mm))
+    prim.CreateClippingRangeAttr(Gf.Vec2f(0.05, 300.0))
+    roll, pitch, yaw = (math.radians(angle) for angle in chase.rpy_deg)
+    usd_utils.set_translate(prim.GetPrim(), chase.position)
+    usd_utils.set_orient(prim.GetPrim(), _quat(usd_camera_rotation(yaw, pitch, roll)))
+    return path
+
+
 def _quat(rotation):
     x, y, z, w = matrix_to_quaternion(rotation)
     return Gf.Quatd(float(w), float(x), float(y), float(z))

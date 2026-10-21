@@ -1,0 +1,7 @@
+# The loop with Isaac Sim's chase camera published, for the demo bag: config/demo.rviz shows it
+# beside the detector's panels. Costs one more render per frame, so only for this recording.
+extends: scene.yaml
+
+viewport:
+  chase:
+    publish: true

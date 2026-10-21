@@ -15,7 +15,7 @@ import yaml
 
 from whycode_sim.geometry import marker_normal_yaw, path_segment, place_marker
 
-MARKER_FAMILIES = ("whycode", "apriltag")
+MARKER_FAMILIES = ("whycode", "whycon", "apriltag")
 
 
 def _namespace(value):
@@ -30,20 +30,31 @@ def _namespace(value):
 def load(path):
     """Load and validate a scene config."""
     path = Path(path)
-    config = _namespace(_read(path))
+    raw, base = _read(path)
+    config = _namespace(raw)
+    if hasattr(config.path, "circles"):
+        config.path.waypoints = circle_waypoints(config.path.circles)
     config.path_on_disk = path
-    config.package_root = path.parent.parent
+    # Textures sit beside the scene the chain starts from, so a variant extending a packaged
+    # scene can live anywhere, such as the benchmark's generated scenes under /root/data
+    config.package_root = base.parent.parent
     _validate(config)
     return config
 
 
 def _read(path):
-    """Parsed YAML, with `extends: <file>` resolved: a scene that differs only in its path
-    and markers names its base rather than copying the camera, render and marker setup."""
+    """Parsed YAML, with `extends: <file>` resolved, and the file the chain starts from.
+
+    A scene that differs only in its path and markers names its base rather than copying the
+    camera, render and marker setup. A relative base is relative to the extending file.
+    """
     with path.open() as handle:
         raw = yaml.safe_load(handle)
     base = raw.pop("extends", None)
-    return raw if base is None else _merge(_read(path.parent / base), raw)
+    if base is None:
+        return raw, path
+    merged, root = _read(path.parent / base)
+    return _merge(merged, raw), root
 
 
 def _merge(base, override):
@@ -55,6 +66,33 @@ def _merge(base, override):
         else:
             merged[key] = value
     return merged
+
+
+def circle_waypoints(circles):
+    """Concentric circles, counter-clockwise, as one path without crossing or touching itself.
+
+    Each circle runs `arc_deg` from `start_deg` and spirals out to the next radius over the
+    rest of the turn. Closest-point tracking would confuse a full circle's end with its
+    start, which share a point.
+    """
+    centre = circles.centre
+    arc = getattr(circles, "arc_deg", 330.0)
+    step = getattr(circles, "step_deg", 10.0)
+    points = []
+    for index, radius in enumerate(circles.radii):
+        last = index == len(circles.radii) - 1
+        outer = radius if last else circles.radii[index + 1]
+        turn = arc if last else 360.0
+        for k in range(int(round(turn / step)) + (1 if last else 0)):
+            angle = k * step
+            # The spiral out to the next radius takes the turn's last (360 - arc) degrees
+            blend = max(0.0, angle - arc) / (360.0 - arc)
+            r = radius + blend * (outer - radius)
+            theta = math.radians(circles.start_deg + angle)
+            points.append(
+                [centre[0] + r * math.cos(theta), centre[1] + r * math.sin(theta)]
+            )
+    return points
 
 
 def _validate(config):
@@ -145,7 +183,7 @@ def resolved_markers(config):
 
     Placement comes from the path unless the entry gives an explicit `position` (and
     optionally `yaw_deg`). Returns entries of id, texture, texture_path, family,
-    position, yaw_rad, size_m, margin.
+    position, yaw_rad, size_m (the textured face's edge), margin.
     """
     waypoints = [list(point) for point in config.path.waypoints]
     loop = getattr(config.path, "loop", True)
@@ -153,10 +191,12 @@ def resolved_markers(config):
     default_facing = getattr(config.marker, "facing_angle_deg", 45.0)
 
     table = family_table(config)
+    family = getattr(config.marker.families, config.marker.family)
     # White border around the texture, as a fraction of size_m on each side.
-    margin = getattr(
-        getattr(config.marker.families, config.marker.family), "margin", 0.0
-    )
+    margin = getattr(family, "margin", 0.0)
+    # size_m is the marker's outer black edge in every family; a texture that carries its
+    # own white border (AprilTag's spans 0.8 of it) is drawn that much larger
+    black_fraction = getattr(family, "black_fraction", 1.0)
     # Reusing an id needs an explicit `slot`; without one an entry takes the table row at
     # its own index, so more entries than rows is an overflow rather than a choice. Two
     # markers sharing an id must never be in frame together, which `run_sim.py
@@ -206,7 +246,7 @@ def resolved_markers(config):
                 family=config.marker.family,
                 position=list(position),
                 yaw_rad=yaw_rad,
-                size_m=getattr(marker, "size_m", config.marker.size_m),
+                size_m=getattr(marker, "size_m", config.marker.size_m) / black_fraction,
                 margin=margin,
             )
         )

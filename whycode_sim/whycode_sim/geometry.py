@@ -166,19 +166,41 @@ def usd_camera_rotation(view_yaw_rad, pitch_rad=0.0, roll_rad=0.0):
     Columns are [right, up, -forward], since USD cameras look down local -Z. A camera
     aimed along +X therefore equals R_USD_TO_GT, which the frame conversion relies on.
     Built from basis vectors rather than composed Euler angles, which hide sign errors.
+    Pitch and roll follow REP-103 in the X-forward, Y-left, Z-up frame: a positive pitch
+    looks down, a positive roll lowers the camera's right side.
     """
     cos_yaw, sin_yaw = math.cos(view_yaw_rad), math.sin(view_yaw_rad)
     cos_pitch, sin_pitch = math.cos(pitch_rad), math.sin(pitch_rad)
-    forward = np.array([cos_yaw * cos_pitch, sin_yaw * cos_pitch, sin_pitch])
+    forward = np.array([cos_yaw * cos_pitch, sin_yaw * cos_pitch, -sin_pitch])
     right = np.cross(forward, [0.0, 0.0, 1.0])
     right /= np.linalg.norm(right)
     up = np.cross(right, forward)
 
     if abs(roll_rad) > 1e-12:
         cos_roll, sin_roll = math.cos(roll_rad), math.sin(roll_rad)
-        right, up = right * cos_roll + up * sin_roll, up * cos_roll - right * sin_roll
+        right, up = right * cos_roll - up * sin_roll, up * cos_roll + right * sin_roll
 
     return np.column_stack([right, up, -forward])
+
+
+def frame_change(scene_world, map_world):
+    """Scene coordinates to the map's: each scene places the same warehouse by offset and yaw."""
+    scene_yaw, map_yaw = (
+        math.radians(scene_world.yaw_deg),
+        math.radians(map_world.yaw_deg),
+    )
+    (sx, sy), (mx, my) = scene_world.offset[:2], map_world.offset[:2]
+
+    def to_map(point):
+        dx, dy = point[0] - sx, point[1] - sy
+        wx = math.cos(scene_yaw) * dx + math.sin(scene_yaw) * dy
+        wy = -math.sin(scene_yaw) * dx + math.cos(scene_yaw) * dy
+        return (
+            math.cos(map_yaw) * wx - math.sin(map_yaw) * wy + mx,
+            math.sin(map_yaw) * wx + math.cos(map_yaw) * wy + my,
+        )
+
+    return to_map
 
 
 def world_to_camera(camera_position, camera_rotation, point_world):
@@ -438,6 +460,26 @@ def _check_quaternion():
     assert np.allclose(quaternion_to_matrix(x, y, z, w), flip, atol=1e-9)
 
 
+def _check_camera_tilt():
+    # REP-103: a positive pitch looks down, a positive roll lowers the right side
+    down = usd_camera_rotation(0.0, math.radians(20.0))
+    assert -down[2, 2] < 0.0, "a positive pitch must look down"
+    rolled = usd_camera_rotation(0.0, 0.0, math.radians(10.0))
+    assert rolled[2, 0] < 0.0, "a positive roll must lower the right side"
+
+
+def _check_frame_change():
+    from types import SimpleNamespace
+
+    # scene_range.yaml turns the warehouse 90 deg: its origin is scene.yaml's (0, 11), +x south
+    to_map = frame_change(
+        SimpleNamespace(offset=[27.1, 8.0, 0.0], yaw_deg=90.0),
+        SimpleNamespace(offset=[8.0, -16.1, 0.0], yaw_deg=0.0),
+    )
+    assert np.allclose(to_map((0.0, 0.0)), (0.0, 11.0)), to_map((0.0, 0.0))
+    assert np.allclose(to_map((10.0, 0.0)), (0.0, 1.0)), to_map((10.0, 0.0))
+
+
 def _check_evaluate_marker():
     from types import SimpleNamespace
 
@@ -525,6 +567,8 @@ def main():
         _check_projection,
         _check_apparent_diameter,
         _check_quaternion,
+        _check_camera_tilt,
+        _check_frame_change,
         _check_evaluate_marker,
         _check_pure_pursuit,
         _check_path_arclength,
